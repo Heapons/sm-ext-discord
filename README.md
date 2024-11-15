@@ -10,6 +10,22 @@ A [SourceMod](http://www.sourcemod.net/) extension that provides Discord bot int
 * Message embed support
 * Support x64
 
+## Platform Support
+* ⚠️ **Windows Users**: D++ library does not support static compilation on Windows. You need to manually copy the following DLL files to your server's directory:
+  - `dpp.dll`
+  - `libcrypto-1_1.dll`
+  - `libssl-1_1.dll`
+  - `opus.dll`
+  - `zlib1.dll`
+
+These files can be found in the `bin` folder of the [release package](https://github.com/brainboxdotcc/DPP/releases/tag/v10.0.35). Please download the appropriate version for your platform (x86 or x64).
+
+Steps for Windows users:
+1. Download the Windows release package from the [D++ releases page](https://github.com/brainboxdotcc/DPP/releases/tag/v10.0.35)
+2. Extract the package
+3. Copy all required DLL files from the `bin` folder to your servers directory
+4. Make sure the DLL files match your server's architecture (x86 or x64)
+
 ## Building
 ```sh
 # Install dependencies
@@ -46,19 +62,41 @@ public void OnPluginStart()
 
 public void Discord_OnReady(Discord discord)
 {
-  char botName[32];
+  char botName[32], botId[32];
   discord.GetBotName(botName, sizeof(botName));
-  PrintToServer("Bot %s is ready!", botName);
+  discord.GetBotId(botId, sizeof(botId));
+  
+  PrintToServer("Bot %s (ID: %s) is ready!", botName, botId);
 }
 
 public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction)
 {
   char commandName[32];
   interaction.GetCommandName(commandName, sizeof(commandName));
-  
+
   if (strcmp(commandName, "ping") == 0)
   {
     interaction.CreateResponse("Pong!");
+  }
+  
+  if (strcmp(commandName, "ban") == 0)
+  {
+    char playerName[64], reason[256];
+    int duration;
+    
+    interaction.GetOptionValue("player", playerName, sizeof(playerName));
+    duration = interaction.GetOptionValueInt("duration");
+    
+    if (!interaction.GetOptionValue("reason", reason, sizeof(reason)))
+    {
+      strcopy(reason, sizeof(reason), "No reason provided");
+    }
+    
+    interaction.DeferReply();
+    
+    char response[512];
+    FormatEx(response, sizeof(response), "Banned %s for %d minutes.\nReason: %s", playerName, duration, reason);
+    interaction.EditResponse(response);
   }
 }
 ```
@@ -67,26 +105,31 @@ public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interacti
 ```cpp
 public void OnPluginStart()
 {
-  // Create option arrays
-  char option_names[2][64];
-  char option_descriptions[2][256];
-  DiscordCommandOptionType option_types[2];
-  bool option_required[2];
+  // Register command with multiple options
+  char option_names[3][64];
+  char option_descriptions[3][256];
+  DiscordCommandOptionType option_types[3];
+  bool option_required[3];
   
-  // Setup first option
-  strcopy(option_names[0], sizeof(option_names[]), "user");
-  strcopy(option_descriptions[0], sizeof(option_descriptions[]), "Target user");
-  option_types[0] = Option_User;
+  // Player option
+  strcopy(option_names[0], sizeof(option_names[]), "player");
+  strcopy(option_descriptions[0], sizeof(option_descriptions[]), "Select a player");
+  option_types[0] = Option_String;
   option_required[0] = true;
   
-  // Setup second option
-  strcopy(option_names[1], sizeof(option_names[]), "reason");
-  strcopy(option_descriptions[1], sizeof(option_descriptions[]), "Ban reason");
-  option_types[1] = Option_String;
-  option_required[1] = false;
+  // Duration option
+  strcopy(option_names[1], sizeof(option_names[]), "duration");
+  strcopy(option_descriptions[1], sizeof(option_descriptions[]), "Ban duration in minutes");
+  option_types[1] = Option_Integer;
+  option_required[1] = true;
   
-  // Register command with options
-  g_Discord.RegisterGlobalSlashCommandWithOptions("ban", "Ban a user", option_names, option_descriptions, option_types, option_required, 2);
+  // Reason option
+  strcopy(option_names[2], sizeof(option_names[]), "reason");
+  strcopy(option_descriptions[2], sizeof(option_descriptions[]), "Ban reason");
+  option_types[2] = Option_String;
+  option_required[2] = false;
+  
+  g_Discord.RegisterGlobalSlashCommandWithOptions("ban", "Ban a player from the server", option_names, option_descriptions, option_types, option_required, 3);
 }
 ```
 

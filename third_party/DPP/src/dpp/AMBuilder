@@ -10,11 +10,6 @@ for cxx in builder.targets:
     binary.compiler.includes += [
       os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
     ]
-  elif binary.compiler.target.platform == 'windows':
-    binary.compiler.includes += [
-      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'include'),
-      os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
-    ]
 
   binary.compiler.defines += [
   ]

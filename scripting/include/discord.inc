@@ -136,11 +136,12 @@ methodmap Discord < Handle {
   /**
    * Registers a slash command for a specific guild
    *
+   * @param guild_id      Guild ID
    * @param name          Command name
    * @param description   Command description
    * @return             true on success, false on failure
    */
-  public native bool RegisterSlashCommand(const char[] name, const char[] description);
+  public native bool RegisterSlashCommand(const char[] guild_id, const char[] name, const char[] description);
 
   /**
    * Registers a global slash command

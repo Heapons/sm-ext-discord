@@ -3,7 +3,7 @@
 
 #define SMEXT_CONF_NAME			"SourceMod Discord Extension"
 #define SMEXT_CONF_DESCRIPTION	"Provide Discord Native"
-#define SMEXT_CONF_VERSION		"1.0.0"
+#define SMEXT_CONF_VERSION		"1.0.1"
 #define SMEXT_CONF_AUTHOR		"ProjectSky"
 #define SMEXT_CONF_URL			"https://github.com/ProjectSky/sm-ext-discord"
 #define SMEXT_CONF_LOGTAG		"discord"

@@ -1,7 +1,8 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
-dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
+if builder.host.platform == 'linux':
+  dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
 
 for cxx in builder.targets:
   binary = Extension.Library(builder, cxx, 'discord.ext')
@@ -20,16 +21,13 @@ for cxx in builder.targets:
 
   if binary.compiler.target.platform == 'linux':
     binary.compiler.postlink += [
+      '-lz',
       '-lssl',
       dpp[arch].binary,
     ]
   elif binary.compiler.target.platform == 'windows':
     binary.compiler.postlink += [
-      'ws2_32.lib',
-      'crypt32.lib',
-      dpp[arch].binary,
-      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'lib', 'libssl_static_{}.lib'.format(arch)),
-      os.path.join(builder.sourcePath, 'third_party', 'openssl', 'lib', 'libcrypto_static_{}.lib'.format(arch)),
+      os.path.join(builder.sourcePath, 'third_party', 'DPP', 'lib', 'dpp_{}.lib'.format(arch)),
 		]
 
   Extension.extensions += [builder.Add(binary)]
