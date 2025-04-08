@@ -1464,6 +1464,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.GetBotName",         discord_GetBotName},
 	{"Discord.GetBotDiscriminator", discord_GetBotDiscriminator},
 	{"Discord.GetBotAvatarUrl",    discord_GetBotAvatarUrl},
+	{"Discord.SetPresence",      discord_SetPresence},
 	{"Discord.SendMessage",      discord_SendMessage},
 	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
 	{"Discord.IsRunning",        discord_IsRunning},
