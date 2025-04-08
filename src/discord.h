@@ -76,6 +76,7 @@ public:
 	void Stop();
 	bool IsRunning() const { return m_isRunning; }
 	void SetHandle(Handle_t handle) { m_discord_handle = handle; }
+	bool SetPresence(dpp::presence presence);
 	bool SendMessage(dpp::snowflake channel_id, const char* message);
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed);
 	bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description);
