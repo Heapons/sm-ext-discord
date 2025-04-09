@@ -17,21 +17,21 @@ enum DiscordCommandOptionType
 
 enum DiscordPresenceStatus
 {
-  Offline = 0,
-  Online = 1,
-  DND = 2,
-  Idle = 3,
-  Invisible = 4
+  Presence_Offline = 0,
+  Presence_Online = 1,
+  Presence_DND = 2,
+  Presence_Idle = 3,
+  Presence_Invisible = 4
 };
 
 enum DiscordActivityType
 {
-  Game = 0,
-  Streaming = 1,
-  Listening = 2,
-  Watching = 3,
-  Custom = 4,
-  Competing = 5
+  Activity_Game = 0,
+  Activity_Streaming = 1,
+  Activity_Listening = 2,
+  Activity_Watching = 3,
+  Activity_Custom = 4,
+  Activity_Competing = 5
 };
 
 /**
