@@ -74,6 +74,22 @@ void DiscordClient::Stop()
 	}
 }
 
+bool DiscordClient::SetPresence(dpp::presence presence)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->set_presence(presence);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to set presence: %s", e.what());
+		return false;
+	}
+}
+
 bool DiscordClient::SendMessage(dpp::snowflake channel_id, const char* message)
 {
 	if (!m_isRunning) {
@@ -316,6 +332,26 @@ static cell_t discord_GetBotAvatarUrl(IPluginContext* pContext, const cell_t* pa
 
 	pContext->StringToLocal(params[2], params[3], avatarUrl);
 	return 1;
+}
+
+static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* status_text;
+	pContext->LocalToString(params[4], &status_text);
+
+	try {
+        dpp::presence presence(static_cast<dpp::presence_status>(params[2]), static_cast<dpp::activity_type>(params[3]), status_text);
+		return discord->SetPresence(presence);
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Unable to create presence object: %s", e.what());
+		return 0;
+	}
 }
 
 static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params)
@@ -1428,6 +1464,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.GetBotName",         discord_GetBotName},
 	{"Discord.GetBotDiscriminator", discord_GetBotDiscriminator},
 	{"Discord.GetBotAvatarUrl",    discord_GetBotAvatarUrl},
+	{"Discord.SetPresence",      discord_SetPresence},
 	{"Discord.SendMessage",      discord_SendMessage},
 	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
 	{"Discord.IsRunning",        discord_IsRunning},

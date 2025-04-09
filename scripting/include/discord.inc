@@ -15,6 +15,25 @@ enum DiscordCommandOptionType
   Option_Number = 10     // Number option
 };
 
+enum DiscordPresenceStatus
+{
+  Presence_Offline = 0,
+  Presence_Online = 1,
+  Presence_DND = 2,
+  Presence_Idle = 3,
+  Presence_Invisible = 4
+};
+
+enum DiscordActivityType
+{
+  Activity_Game = 0,
+  Activity_Streaming = 1,
+  Activity_Listening = 2,
+  Activity_Watching = 3,
+  Activity_Custom = 4,
+  Activity_Competing = 5
+};
+
 /**
  * Discord bot client handle
  */
@@ -83,6 +102,16 @@ methodmap Discord < Handle {
    * @return         True if successful, false otherwise
    */
   public native bool GetBotAvatarUrl(char[] buffer, int maxlen);
+
+  /**
+   * Sets the bot's presence and activity.
+   *
+   * @param status       The online presence status of the bot
+   * @param activity     The type of activity for the bot
+   * @param statusText   The text of the status to set
+   * @return             true on success, false on failure
+   */
+  public native bool SetPresence(DiscordPresenceStatus status, DiscordActivityType activity, const char[] statusText);
 
   /**
    * Sends a message to a specified channel
