@@ -39,7 +39,7 @@ enum DiscordActivityType
  */
 typeset GetChannelCallback
 {
-	function void (Discord discord, DiscordChannel channel);
+	function void (Discord discord, DiscordChannel channel, any data);
 };
 
 /**
@@ -145,9 +145,10 @@ methodmap Discord < Handle {
    *
    * @param channelId Target channel ID
    * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
    * @return          true on success, false on failure
    */
-  public native bool GetChannel(const char[] channelId, GetChannelCallback callback);
+  public native bool GetChannel(const char[] channelId, GetChannelCallback callback, any data = 0);
 
   /**
    * Edits an existing message

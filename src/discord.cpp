@@ -124,14 +124,14 @@ bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* mess
 	}
 }
 
-bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_forward)
+bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data)
 {
 	if (!m_isRunning) {
 		return false;
 	}
 
 	try {
-		m_cluster->channel_get(channel_id, [this, forward = callback_forward](const dpp::confirmation_callback_t& callback)
+		m_cluster->channel_get(channel_id, [this, forward = callback_forward, value = data](const dpp::confirmation_callback_t& callback)
 		{
 			if (callback.is_error())
 			{
@@ -141,7 +141,7 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 			}
 			auto channel = callback.get<dpp::channel>();
 
-			g_TaskQueue.Push([this, &forward, channel = new DiscordChannel(channel)]() {
+			g_TaskQueue.Push([this, &forward, channel = new DiscordChannel(channel), value = value]() {
 				if (forward && forward->GetFunctionCount() == 0)
 				{
 					return;
@@ -158,7 +158,8 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 
 				forward->PushCell(m_discord_handle);
 				forward->PushCell(hndlResponse);
-				forward->Execute(NULL);
+				forward->PushCell(value);
+				forward->Execute(nullptr);
 
 				handlesys->FreeHandle(hndlResponse, &sec);
 
@@ -473,13 +474,14 @@ static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
 
 		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
 
-		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Cell);
 		if (forward == nullptr || !forward->AddFunction(callback))
 		{
 			return pContext->ThrowNativeError("Could not create forward.");
 		}
 
-		return discord->GetChannel(channelFlake, forward);
+		cell_t data = params[4];
+		return discord->GetChannel(channelFlake, forward, data);
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid channel ID format: %s", channelId);

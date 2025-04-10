@@ -90,7 +90,7 @@ public:
 	bool SetPresence(dpp::presence presence);
 	bool SendMessage(dpp::snowflake channel_id, const char* message);
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed);
-	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward);
+	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
     bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description);
 	bool RegisterGlobalSlashCommand(const char* name, const char* description);
 	bool RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const std::vector<dpp::command_option>& options);
