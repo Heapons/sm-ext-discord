@@ -59,7 +59,7 @@ private:
 public:
 	DiscordChannel(const dpp::channel& chnl) : m_channel(chnl) {}
 
-	const char* GetName() const { return m_message.name.c_str(); }
+	const char* GetName() const { return m_channel.name.c_str(); }
 };
 
 class DiscordClient
