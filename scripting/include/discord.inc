@@ -333,6 +333,20 @@ methodmap DiscordMessage < Handle
 }
 
 /**
+ * Discord channel handle
+ */
+methodmap DiscordChannel < Handle
+{
+  /**
+   * Gets the name of the channel
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetName(char[] buffer, int maxlength);
+}
+
+/**
  * Discord embed handle
  */
 methodmap DiscordEmbed < Handle
