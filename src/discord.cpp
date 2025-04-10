@@ -124,44 +124,46 @@ bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* mess
 	}
 }
 
-bool DiscordClient::GetChannel(dpp::snowflake channel_id, IChangeableForward *callback_forward)
+bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_forward)
 {
 	if (!m_isRunning) {
 		return false;
 	}
 
 	try {
-		m_cluster->channel_get(channel_id, [&callback_forward](const dpp::confirmation_callback_t& callback)
+		m_cluster->channel_get(channel_id, [this, forward = callback_forward](const dpp::confirmation_callback_t& callback)
 		{
 			if (callback.is_error())
 			{
 				smutils->LogError(myself, "Failed to get channel: %s", callback.get_error().message.c_str());
-				forwards->ReleaseForward(callback_forward);
+				forwards->ReleaseForward(forward);
 				return;
 			}
 			auto channel = callback.get<dpp::channel>();
 
-			if (callback_forward->GetFunctionCount() == 0)
-			{
-				return;
-			}
+			g_TaskQueue.Push([this, &forward, channel = new DiscordChannel(channel)]() {
+				if (forward && forward->GetFunctionCount() == 0)
+				{
+					return;
+				}
 
-			HandleError err;
-			HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
-			Handle_t hndlResponse = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
-			if (hndlResponse == BAD_HANDLE)
-			{
-				smutils->LogError(myself, "Could not create channel fetch handle (error %d)", err);
-				return;
-			}
+				HandleError err;
+				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+				Handle_t hndlResponse = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
+				if (hndlResponse == BAD_HANDLE)
+				{
+					smutils->LogError(myself, "Could not create channel fetch handle (error %d)", err);
+					return;
+				}
 
-			callback_forward->PushCell(m_discord_handle);
-			callback_forward->PushCell(hndlResponse);
-			callback_forward->Execute(NULL);
+				forward->PushCell(m_discord_handle);
+				forward->PushCell(hndlResponse);
+				forward->Execute(NULL);
 
-			handlesys->FreeHandle(hndlResponse, &sec);
+				handlesys->FreeHandle(hndlResponse, &sec);
 
-			forwards->ReleaseForward(callback_forward);
+				forwards->ReleaseForward(forward);
+            });
 		});
 		return true;
 	}
@@ -470,15 +472,14 @@ static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
 		dpp::snowflake channelFlake = std::stoull(channelId);
 
 		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
-		cell_t value = params[3];
 
-		IChangeableForward *forward = forwards->CreateForwardEx(NULL, ET_Ignore, 3, NULL, Param_Cell, Param_Cell);
-		if (forward == NULL || !forward->AddFunction(callback))
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
+		if (forward == nullptr || !forward->AddFunction(callback))
 		{
 			return pContext->ThrowNativeError("Could not create forward.");
 		}
 
-		discord->SendMessage
+		return discord->GetChannel(channelFlake, forward);
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid channel ID format: %s", channelId);
@@ -1554,6 +1555,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.SetPresence",      discord_SetPresence},
 	{"Discord.SendMessage",      discord_SendMessage},
 	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
+	{"Discord.GetChannel", discord_GetChannel},
 	{"Discord.IsRunning",        discord_IsRunning},
 	{"Discord.RegisterSlashCommand", discord_RegisterSlashCommand},
 	{"Discord.RegisterGlobalSlashCommand", discord_RegisterGlobalSlashCommand},
@@ -1574,6 +1576,9 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.GetAuthorName", message_GetAuthorName},
 	{"DiscordMessage.GetAuthorDiscriminator", message_GetAuthorDiscriminator},
 	{"DiscordMessage.IsBot",         message_IsBot},
+
+    // Channel
+    {"DiscordChannel.GetName",       channel_GetName},
 
 	// Embed
 	{"DiscordEmbed.DiscordEmbed", embed_CreateEmbed},

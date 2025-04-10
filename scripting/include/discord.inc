@@ -34,6 +34,14 @@ enum DiscordActivityType
   Activity_Competing = 5
 };
 
+/*
+ * Callbacks
+ */
+typeset GetChannelCallback
+{
+	function void (Discord discord, DiscordChannel channel);
+};
+
 /**
  * Discord bot client handle
  */
@@ -131,6 +139,15 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed);
+
+  /**
+   * Gets a channel by it's ID
+   *
+   * @param channelId Target channel ID
+   * @param callback  Method to run on success
+   * @return          true on success, false on failure
+   */
+  public native bool GetChannel(const char[] channelId, GetChannelCallback callback);
 
   /**
    * Edits an existing message

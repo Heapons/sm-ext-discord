@@ -82,6 +82,12 @@ void DiscordMessageHandler::OnHandleDestroy(HandleType_t type, void* object)
 	delete message;
 }
 
+void DiscordChannelHandler::OnHandleDestroy(HandleType_t type, void* object)
+{
+	DiscordChannel* channel = (DiscordChannel*)object;
+	delete channel;
+}
+
 void DiscordEmbedHandler::OnHandleDestroy(HandleType_t type, void* object)
 {
 	DiscordEmbed* embed = (DiscordEmbed*)object;
