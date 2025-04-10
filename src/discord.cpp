@@ -124,6 +124,56 @@ bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* mess
 	}
 }
 
+bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->channel_get(channel_id, [this, forward = callback_forward, value = data](const dpp::confirmation_callback_t& callback)
+		{
+			if (callback.is_error())
+			{
+				smutils->LogError(myself, "Failed to get channel: %s", callback.get_error().message.c_str());
+				forwards->ReleaseForward(forward);
+				return;
+			}
+			auto channel = callback.get<dpp::channel>();
+
+			g_TaskQueue.Push([this, &forward, channel = new DiscordChannel(channel), value = value]() {
+				if (forward && forward->GetFunctionCount() == 0)
+				{
+					return;
+				}
+
+				HandleError err;
+				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+				Handle_t channelHandle = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
+				if (channelHandle == BAD_HANDLE)
+				{
+					smutils->LogError(myself, "Could not create channel handle (error %d)", err);
+					return;
+				}
+
+				forward->PushCell(m_discord_handle);
+				forward->PushCell(channelHandle);
+				forward->PushCell(value);
+				forward->Execute(nullptr);
+
+				handlesys->FreeHandle(channelHandle, &sec);
+
+				forwards->ReleaseForward(forward);
+            });
+		});
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to get channel: %s", e.what());
+		return false;
+	}
+}
+
 void DiscordClient::SetupEventHandlers()
 {
 	if (!m_cluster) {
@@ -409,6 +459,36 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 	}
 }
 
+static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+
+		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
+
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Cell);
+		if (forward == nullptr || !forward->AddFunction(callback))
+		{
+			return pContext->ThrowNativeError("Could not create forward.");
+		}
+
+		cell_t data = params[4];
+		return discord->GetChannel(channelFlake, forward, data);
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return 0;
+	}
+}
+
 static cell_t discord_IsRunning(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
@@ -420,7 +500,7 @@ static cell_t discord_IsRunning(IPluginContext* pContext, const cell_t* params)
 }
 
 // Embed natives
-static cell_t Native_CreateEmbed(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = new DiscordEmbed();
 
@@ -452,7 +532,7 @@ static DiscordEmbed* GetEmbedPointer(IPluginContext* pContext, Handle_t handle)
 	return embed;
 }
 
-static cell_t Native_SetTitle(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetTitle(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -466,7 +546,7 @@ static cell_t Native_SetTitle(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_SetDescription(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetDescription(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -480,7 +560,7 @@ static cell_t Native_SetDescription(IPluginContext* pContext, const cell_t* para
 	return 1;
 }
 
-static cell_t Native_SetColor(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetColor(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -491,7 +571,7 @@ static cell_t Native_SetColor(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_SetUrl(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetUrl(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -505,7 +585,7 @@ static cell_t Native_SetUrl(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_SetAuthor(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetAuthor(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -529,7 +609,7 @@ static cell_t Native_SetAuthor(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_SetFooter(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetFooter(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -548,7 +628,7 @@ static cell_t Native_SetFooter(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_AddField(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_AddField(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -567,7 +647,7 @@ static cell_t Native_AddField(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-static cell_t Native_SetThumbnail(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetThumbnail(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -581,7 +661,7 @@ static cell_t Native_SetThumbnail(IPluginContext* pContext, const cell_t* params
 	return 1;
 }
 
-static cell_t Native_SetImage(IPluginContext* pContext, const cell_t* params)
+static cell_t embed_SetImage(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
 	if (!embed) {
@@ -595,123 +675,133 @@ static cell_t Native_SetImage(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
-// Message natives
-static cell_t Native_GetContent(IPluginContext* pContext, const cell_t* params)
+static DiscordMessage* GetMessagePointer(IPluginContext* pContext, Handle_t handle)
 {
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 
 	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
+	if ((err = handlesys->ReadHandle(handle, g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
 	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+		pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return message;
+}
+
+// Message natives
+static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetContent());
 	return 1;
 }
 
-static cell_t Native_GetMessageId(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetMessageId().c_str());
 	return 1;
 }
 
-static cell_t Native_GetChannelId(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetChannelId(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetChannelId().c_str());
 	return 1;
 }
 
-static cell_t Native_GetGuildId(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetGuildId(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetGuildId().c_str());
 	return 1;
 }
 
-static cell_t Native_GetAuthorId(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetAuthorId(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetAuthorId().c_str());
 	return 1;
 }
 
-static cell_t Native_GetAuthorName(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetAuthorName(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	pContext->StringToLocal(params[2], params[3], message->GetAuthorName());
 	return 1;
 }
 
-static cell_t Native_GetAuthorDiscriminator(IPluginContext* pContext, const cell_t* params)
+static cell_t message_GetAuthorDiscriminator(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
 	}
 
 	return message->GetAuthorDiscriminator();
 }
 
-static cell_t Native_IsBot(IPluginContext* pContext, const cell_t* params)
+static cell_t message_IsBot(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
+	}
+
+	return message->IsBot() ? 1 : 0;
+}
+
+static DiscordChannel* GetChannelPointer(IPluginContext* pContext, Handle_t handle)
 {
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(params[1], g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
+	DiscordChannel* channel;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordChannelHandle, &sec, (void**)&channel)) != HandleError_None)
 	{
-		return pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", params[1], err);
+		pContext->ThrowNativeError("Invalid Discord channel handle %x (error %d)", handle, err);
+		return nullptr;
 	}
 
-	return message->IsBot() ? 1 : 0;
+	return channel;
+}
+
+// Channel natives
+static cell_t channel_GetName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
+	if (!channel) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], channel->GetName());
+	return 1;
 }
 
 bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description)
@@ -1467,6 +1557,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.SetPresence",      discord_SetPresence},
 	{"Discord.SendMessage",      discord_SendMessage},
 	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
+	{"Discord.GetChannel", discord_GetChannel},
 	{"Discord.IsRunning",        discord_IsRunning},
 	{"Discord.RegisterSlashCommand", discord_RegisterSlashCommand},
 	{"Discord.RegisterGlobalSlashCommand", discord_RegisterGlobalSlashCommand},
@@ -1474,31 +1565,34 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.EditMessageEmbed", discord_EditMessageEmbed},
 	{"Discord.DeleteMessage", discord_DeleteMessage},
 	{"Discord.RegisterSlashCommandWithOptions", discord_RegisterSlashCommandWithOptions},
-  {"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
+  	{"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
 	{"Discord.DeleteGuildCommand", discord_DeleteGuildCommand},
-  {"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
+  	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
 
 	// Message
-	{"DiscordMessage.GetContent",    Native_GetContent},
-	{"DiscordMessage.GetMessageId",  Native_GetMessageId},
-	{"DiscordMessage.GetChannelId",  Native_GetChannelId},
-	{"DiscordMessage.GetGuildId",    Native_GetGuildId},
-	{"DiscordMessage.GetAuthorId",   Native_GetAuthorId},
-	{"DiscordMessage.GetAuthorName", Native_GetAuthorName},
-	{"DiscordMessage.GetAuthorDiscriminator", Native_GetAuthorDiscriminator},
-	{"DiscordMessage.IsBot",         Native_IsBot},
+	{"DiscordMessage.GetContent",    message_GetContent},
+	{"DiscordMessage.GetMessageId",  message_GetMessageId},
+	{"DiscordMessage.GetChannelId",  message_GetChannelId},
+	{"DiscordMessage.GetGuildId",    message_GetGuildId},
+	{"DiscordMessage.GetAuthorId",   message_GetAuthorId},
+	{"DiscordMessage.GetAuthorName", message_GetAuthorName},
+	{"DiscordMessage.GetAuthorDiscriminator", message_GetAuthorDiscriminator},
+	{"DiscordMessage.IsBot",         message_IsBot},
+
+    // Channel
+    {"DiscordChannel.GetName",       channel_GetName},
 
 	// Embed
-	{"DiscordEmbed.DiscordEmbed", Native_CreateEmbed},
-	{"DiscordEmbed.SetTitle",     Native_SetTitle},
-	{"DiscordEmbed.SetDescription", Native_SetDescription},
-	{"DiscordEmbed.SetColor",     Native_SetColor},
-	{"DiscordEmbed.SetUrl",       Native_SetUrl},
-	{"DiscordEmbed.SetAuthor",    Native_SetAuthor},
-	{"DiscordEmbed.SetFooter",    Native_SetFooter},
-	{"DiscordEmbed.AddField",     Native_AddField},
-	{"DiscordEmbed.SetThumbnail", Native_SetThumbnail},
-	{"DiscordEmbed.SetImage",     Native_SetImage},
+	{"DiscordEmbed.DiscordEmbed", embed_CreateEmbed},
+	{"DiscordEmbed.SetTitle",     embed_SetTitle},
+	{"DiscordEmbed.SetDescription", embed_SetDescription},
+	{"DiscordEmbed.SetColor",     embed_SetColor},
+	{"DiscordEmbed.SetUrl",       embed_SetUrl},
+	{"DiscordEmbed.SetAuthor",    embed_SetAuthor},
+	{"DiscordEmbed.SetFooter",    embed_SetFooter},
+	{"DiscordEmbed.AddField",     embed_AddField},
+	{"DiscordEmbed.SetThumbnail", embed_SetThumbnail},
+	{"DiscordEmbed.SetImage",     embed_SetImage},
 
 	// Slash Command
 	{"DiscordInteraction.CreateResponse", interaction_CreateResponse},

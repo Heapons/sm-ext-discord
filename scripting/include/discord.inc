@@ -3,6 +3,13 @@
 #endif
 #define _discord_included_
 
+#define MAX_DISCORD_MESSAGE_LENGTH 2001
+#define MAX_DISCORD_NITRO_MESSAGE_LENGTH 4001
+#define SNOWFLAKE_SIZE 20
+#define MAX_DISCORD_NAME_LENGTH 33
+#define MAX_DISCORD_PRESENCE_LENGTH 129
+#define MAX_DISCORD_CHANNEL_NAME_LENGTH 101
+
 // Command option types for slash commands
 enum DiscordCommandOptionType
 {
@@ -32,6 +39,14 @@ enum DiscordActivityType
   Activity_Watching = 3,
   Activity_Custom = 4,
   Activity_Competing = 5
+};
+
+/*
+ * Callbacks
+ */
+typeset GetChannelCallback
+{
+	function void (Discord discord, DiscordChannel channel, any data);
 };
 
 /**
@@ -131,6 +146,16 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed);
+
+  /**
+   * Gets a channel by it's ID
+   *
+   * @param channelId Target channel ID
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool GetChannel(const char[] channelId, GetChannelCallback callback, any data = 0);
 
   /**
    * Edits an existing message
@@ -330,6 +355,20 @@ methodmap DiscordMessage < Handle
    * @return          true if author is bot, false otherwise
    */
   public native bool IsBot();
+}
+
+/**
+ * Discord channel handle
+ */
+methodmap DiscordChannel < Handle
+{
+  /**
+   * Gets the name of the channel
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetName(char[] buffer, int maxlength);
 }
 
 /**
