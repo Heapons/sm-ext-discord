@@ -149,19 +149,19 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 
 				HandleError err;
 				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
-				Handle_t hndlResponse = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
-				if (hndlResponse == BAD_HANDLE)
+				Handle_t channelHandle = handlesys->CreateHandleEx(g_DiscordChannelHandle, channel, &sec, nullptr, &err);
+				if (channelHandle == BAD_HANDLE)
 				{
-					smutils->LogError(myself, "Could not create channel fetch handle (error %d)", err);
+					smutils->LogError(myself, "Could not create channel handle (error %d)", err);
 					return;
 				}
 
 				forward->PushCell(m_discord_handle);
-				forward->PushCell(hndlResponse);
+				forward->PushCell(channelHandle);
 				forward->PushCell(value);
 				forward->Execute(nullptr);
 
-				handlesys->FreeHandle(hndlResponse, &sec);
+				handlesys->FreeHandle(channelHandle, &sec);
 
 				forwards->ReleaseForward(forward);
             });

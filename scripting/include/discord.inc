@@ -3,6 +3,13 @@
 #endif
 #define _discord_included_
 
+#define MAX_DISCORD_MESSAGE_LENGTH 2001
+#define MAX_DISCORD_NITRO_MESSAGE_LENGTH 4001
+#define SNOWFLAKE_SIZE 20
+#define MAX_DISCORD_NAME_LENGTH 33
+#define MAX_DISCORD_PRESENCE_LENGTH 129
+#define MAX_DISCORD_CHANNEL_NAME_LENGTH 101
+
 // Command option types for slash commands
 enum DiscordCommandOptionType
 {
