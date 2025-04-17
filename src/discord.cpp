@@ -982,6 +982,17 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 	return handle;
 }
 
+static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], webhook->GetId().c_str());
+	return 1;
+}
+
 static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
@@ -1788,6 +1799,7 @@ const sp_nativeinfo_t discord_natives[] = {
 
 	// Webhook
 	{"DiscordWebhook.DiscordWebhook",webhook_CreateWebhook},
+	{"DiscordWebhook.GetId",       webhook_GetId},
 	{"DiscordWebhook.GetName",       webhook_GetName},
 	{"DiscordWebhook.SetName",       webhook_SetName},
 

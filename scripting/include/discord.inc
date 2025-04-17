@@ -409,6 +409,14 @@ methodmap DiscordWebhook < Handle
   public native DiscordWebhook(const char[] webhookUrl);
 
   /**
+   * Gets the ID of the webhook
+   *
+   * @param buffer      Buffer to store the ID
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetId(char[] buffer, int maxlength);
+
+  /**
    * Gets the name of the webhook
    *
    * @param buffer      Buffer to store the name

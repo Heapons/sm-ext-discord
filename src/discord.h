@@ -68,6 +68,8 @@ public:
 	dpp::webhook m_webhook;
 	DiscordWebhook(const dpp::webhook& wbhk) : m_webhook(wbhk) {}
 
+	std::string GetId() const { return std::to_string(m_webhook.id); }
+
 	const char* GetName() const { return m_webhook.name.c_str(); }
 
 	void SetName(const char* value) { m_webhook.name = value; }
