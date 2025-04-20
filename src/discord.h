@@ -73,6 +73,10 @@ public:
 	const char* GetName() const { return m_webhook.name.c_str(); }
 
 	void SetName(const char* value) { m_webhook.name = value; }
+
+	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
+
+	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 };
 
 class DiscordClient

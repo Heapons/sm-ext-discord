@@ -1017,6 +1017,30 @@ static cell_t webhook_SetName(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t webhook_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarUrl());
+	return 1;
+}
+
+static cell_t webhook_SetAvatarUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	char* avatar_url;
+	pContext->LocalToString(params[2], &avatar_url);
+	webhook->SetAvatarUrl(avatar_url);
+	return 1;
+}
+
 bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description)
 {
 	if (!m_isRunning) {
@@ -1802,6 +1826,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordWebhook.GetId",       webhook_GetId},
 	{"DiscordWebhook.GetName",       webhook_GetName},
 	{"DiscordWebhook.SetName",       webhook_SetName},
+	{"DiscordWebhook.GetAvatarUrl",       webhook_GetAvatarUrl},
+	{"DiscordWebhook.SetAvatarUrl",       webhook_SetAvatarUrl},
 
 	// Embed
 	{"DiscordEmbed.DiscordEmbed", embed_CreateEmbed},
