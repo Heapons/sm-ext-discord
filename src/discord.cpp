@@ -90,6 +90,22 @@ bool DiscordClient::SetPresence(dpp::presence presence)
 	}
 }
 
+bool DiscordClient::ExecuteWebhook(dpp::webhook wh, const char* message)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->execute_webhook(wh, dpp::message(message));
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to execute webhook: %s", e.what());
+		return false;
+	}
+}
+
 bool DiscordClient::SendMessage(dpp::snowflake channel_id, const char* message)
 {
 	if (!m_isRunning) {
@@ -120,6 +136,69 @@ bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* mess
 	}
 	catch (const std::exception& e) {
 		smutils->LogError(myself, "Failed to send message with embed: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::GetChannelWebhooks(dpp::snowflake channel_id, IForward *callback_forward, cell_t data)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->get_channel_webhooks(channel_id, [this, forward = callback_forward, value = data](const dpp::confirmation_callback_t& callback)
+		{
+			if (callback.is_error())
+			{
+				smutils->LogError(myself, "Failed to get channel webhooks: %s", callback.get_error().message.c_str());
+				forwards->ReleaseForward(forward);
+				return;
+			}
+			auto webhook_map = callback.get<dpp::webhook_map>();
+
+			g_TaskQueue.Push([this, &forward, webhooks = webhook_map, value = value]() {
+				if (forward && forward->GetFunctionCount() == 0)
+				{
+					return;
+				}
+
+				int webhook_count = webhooks.size();
+				std::unique_ptr<cell_t[]> handles = std::make_unique<cell_t[]>(webhook_count);
+
+				HandleError err;
+				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+				int i = 0;
+				for (auto pair : webhooks)
+				{
+					DiscordWebhook* wbk = new DiscordWebhook(pair.second);
+					Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, wbk, &sec, nullptr, &err);
+					if (webhookHandle == BAD_HANDLE)
+					{
+						smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
+						continue;
+					}
+					handles[i++] = webhookHandle;
+				}
+
+				forward->PushCell(m_discord_handle);
+				forward->PushArray(handles.get(), webhook_count);
+				forward->PushFloat(webhook_count);
+				forward->PushCell(value);
+				forward->Execute(nullptr);
+
+				for (i = 0; i < webhook_count; i++)
+				{
+					handlesys->FreeHandle(handles[i], &sec);
+				}
+
+				forwards->ReleaseForward(forward);
+			});
+		});
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to get channel webhooks: %s", e.what());
 		return false;
 	}
 }
@@ -270,6 +349,21 @@ static DiscordClient* GetDiscordPointer(IPluginContext* pContext, Handle_t handl
 	return discord;
 }
 
+static DiscordWebhook* GetWebhookPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordWebhook* webhook;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordWebhookHandle, &sec, (void**)&webhook)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord webhook handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return webhook;
+}
+
 static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* params)
 {
 	char* token;
@@ -404,6 +498,57 @@ static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params
 	}
 }
 
+static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+
+		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
+
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Array, Param_Float, Param_Any);
+		if (forward == nullptr || !forward->AddFunction(callback))
+		{
+			return pContext->ThrowNativeError("Could not create forward.");
+		}
+
+		cell_t data = params[4];
+		return discord->GetChannelWebhooks(channelFlake, forward, data);
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return 0;
+	}
+}
+
+static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[2]);
+
+	char* message;
+	pContext->LocalToString(params[3], &message);
+
+	try {
+		return discord->ExecuteWebhook(webhook->m_webhook, message) ? 1 : 0;
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Failed to execute webhook: %s", e.what());
+		return 0;
+	}
+}
+
 static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
@@ -474,7 +619,7 @@ static cell_t discord_GetChannel(IPluginContext* pContext, const cell_t* params)
 
 		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
 
-		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Cell);
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Any);
 		if (forward == nullptr || !forward->AddFunction(callback))
 		{
 			return pContext->ThrowNativeError("Could not create forward.");
@@ -801,6 +946,74 @@ static cell_t channel_GetName(IPluginContext* pContext, const cell_t* params)
 	}
 
 	pContext->StringToLocal(params[2], params[3], channel->GetName());
+	return 1;
+}
+
+// Webhook natives
+static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* params)
+{
+	char* webhook_url;
+	pContext->LocalToString(params[1], &webhook_url);
+
+	dpp::webhook webhook;
+	try
+	{
+    	webhook = dpp::webhook(webhook_url);
+	}
+	catch (const std::exception& e)
+	{
+		pContext->ReportError("Webhook url invalid: %s", e.what());
+		return BAD_HANDLE;
+	}
+
+	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(webhook);
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, pDiscordWebhook, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordWebhook;
+		pContext->ReportError("Could not create webhook handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], webhook->GetId().c_str());
+	return 1;
+}
+
+static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], webhook->GetName());
+	return 1;
+}
+
+static cell_t webhook_SetName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+	webhook->SetName(name);
 	return 1;
 }
 
@@ -1555,6 +1768,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.GetBotDiscriminator", discord_GetBotDiscriminator},
 	{"Discord.GetBotAvatarUrl",    discord_GetBotAvatarUrl},
 	{"Discord.SetPresence",      discord_SetPresence},
+	{"Discord.GetChannelWebhooks",      discord_GetChannelWebhooks},
+	{"Discord.ExecuteWebhook",      discord_ExecuteWebhook},
 	{"Discord.SendMessage",      discord_SendMessage},
 	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
 	{"Discord.GetChannel", discord_GetChannel},
@@ -1580,7 +1795,13 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.IsBot",         message_IsBot},
 
     // Channel
-    {"DiscordChannel.GetName",       channel_GetName},
+	{"DiscordChannel.GetName",       channel_GetName},
+
+	// Webhook
+	{"DiscordWebhook.DiscordWebhook",webhook_CreateWebhook},
+	{"DiscordWebhook.GetId",       webhook_GetId},
+	{"DiscordWebhook.GetName",       webhook_GetName},
+	{"DiscordWebhook.SetName",       webhook_SetName},
 
 	// Embed
 	{"DiscordEmbed.DiscordEmbed", embed_CreateEmbed},
