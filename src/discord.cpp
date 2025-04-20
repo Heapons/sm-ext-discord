@@ -902,6 +902,28 @@ static cell_t message_GetAuthorName(IPluginContext* pContext, const cell_t* para
 	return 1;
 }
 
+static cell_t message_GetAuthorDisplayName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], message->GetAuthorDisplayName());
+	return 1;
+}
+
+static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname());
+	return 1;
+}
+
 static cell_t message_GetAuthorDiscriminator(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
@@ -1815,6 +1837,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.GetGuildId",    message_GetGuildId},
 	{"DiscordMessage.GetAuthorId",   message_GetAuthorId},
 	{"DiscordMessage.GetAuthorName", message_GetAuthorName},
+	{"DiscordMessage.GetAuthorDisplayName", message_GetAuthorDisplayName},
+	{"DiscordMessage.GetAuthorNickname", message_GetAuthorNickname},
 	{"DiscordMessage.GetAuthorDiscriminator", message_GetAuthorDiscriminator},
 	{"DiscordMessage.IsBot",         message_IsBot},
 
