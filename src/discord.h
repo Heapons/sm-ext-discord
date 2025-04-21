@@ -44,6 +44,8 @@ public:
 	std::string GetGuildId() const { return std::to_string(m_message.guild_id); }
 	std::string GetAuthorId() const { return std::to_string(m_message.author.id); }
 	const char* GetAuthorName() const { return m_message.author.username.c_str(); }
+	const char* GetAuthorDisplayName() const { return m_message.author.global_name.c_str(); }
+	const char* GetAuthorNickname() const { return m_message.member.get_nickname().c_str(); }
 	const uint16_t GetAuthorDiscriminator() const { return m_message.author.discriminator; }
 	bool IsPinned() const { return m_message.pinned; }
 	bool IsTTS() const { return m_message.tts; }
@@ -73,6 +75,10 @@ public:
 	const char* GetName() const { return m_webhook.name.c_str(); }
 
 	void SetName(const char* value) { m_webhook.name = value; }
+
+	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
+
+	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 };
 
 class DiscordClient

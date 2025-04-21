@@ -345,6 +345,22 @@ methodmap DiscordMessage < Handle
   public native void GetAuthorName(char[] buffer, int maxlength);
 
   /**
+   * Gets the global display name of the message author
+   *
+   * @param buffer      Buffer to store the display name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAuthorDisplayName(char[] buffer, int maxlength);
+
+  /**
+   * Gets the nickname of the message author within the guild this message was sent in
+   *
+   * @param buffer      Buffer to store the author nickname
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAuthorNickname(char[] buffer, int maxlength);
+
+  /**
    * Gets the discriminator of the message author
    *
    * @param buffer      Buffer to store the discriminator
@@ -430,6 +446,21 @@ methodmap DiscordWebhook < Handle
    * @param name		New string to set the name to
    */
   public native void SetName(char[] name);
+
+  /**
+   * Gets the avatar_url of the webhook
+   *
+   * @param buffer      Buffer to store the url
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAvatarUrl(char[] buffer, int maxlength);
+
+  /**
+   * Sets the avatar_url of the webhook
+   *
+   * @param name		New string to set the avatar_url to
+   */
+  public native void SetAvatarUrl(char[] avatarUrl);
 }
 
 /**
