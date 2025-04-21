@@ -22,6 +22,12 @@ public:
 	void OnHandleDestroy(HandleType_t type, void* object);
 };
 
+class DiscordUserHandler : public IHandleTypeDispatch
+{
+public:
+	void OnHandleDestroy(HandleType_t type, void* object);
+};
+
 class DiscordMessageHandler : public IHandleTypeDispatch
 {
 public:
@@ -60,8 +66,9 @@ extern IForward* g_pForwardMessage;
 extern IForward* g_pForwardError;
 extern IForward* g_pForwardSlashCommand;
 
-extern HandleType_t g_DiscordHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle;
+extern HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle;
 extern DiscordHandler g_DiscordHandler;
+extern DiscordUserHandler g_DiscordUserHandler;
 extern DiscordMessageHandler g_DiscordMessageHandler;
 extern DiscordChannelHandler g_DiscordChannelHandler;
 extern DiscordWebhookHandler g_DiscordWebhookHandler;

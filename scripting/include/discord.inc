@@ -54,6 +54,11 @@ typeset GetChannelWebhooksCallback
   function void (Discord discord, DiscordWebhook[] webhookMap, float count, any data);
 };
 
+typeset CreateWebhookCallback
+{
+  function void (Discord discord, DiscordWebhook webhook, any data);
+};
+
 /**
  * Discord bot client handle
  */
@@ -141,6 +146,17 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool ExecuteWebhook(DiscordWebhook wh, const char[] message);
+
+  /**
+   * Creates a webhook for a channel
+   *
+   * @param channelId Target channel ID
+   * @param name      Name of the webhook to be created
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool CreateWebhook(const char[] channelId, const char[] name, CreateWebhookCallback callback, any data = 0);
 
   /**
    * Gets all webhooks assigned to a channel
@@ -292,6 +308,20 @@ methodmap Discord < Handle {
 }
 
 /**
+ * Discord user handle
+ */
+methodmap DiscordUser < Handle
+{
+  /**
+   * Gets the ID of the user
+   *
+   * @param buffer      Buffer to store the ID
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetId(char[] buffer, int maxlength);
+}
+
+/**
  * Discord message handle
  */
 methodmap DiscordMessage < Handle
@@ -431,6 +461,11 @@ methodmap DiscordWebhook < Handle
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetId(char[] buffer, int maxlength);
+
+  /**
+   * Gets the user that created the webhook
+   */
+  public native DiscordUser GetUser();
 
   /**
    * Gets the name of the webhook

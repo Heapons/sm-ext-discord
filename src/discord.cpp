@@ -203,6 +203,56 @@ bool DiscordClient::GetChannelWebhooks(dpp::snowflake channel_id, IForward *call
 	}
 }
 
+bool DiscordClient::CreateWebhook(dpp::webhook wh, IForward *callback_forward, cell_t data)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->create_webhook(wh, [this, forward = callback_forward, value = data](const dpp::confirmation_callback_t& callback)
+		{
+			if (callback.is_error())
+			{
+				smutils->LogError(myself, "Failed to create webhook: %s", callback.get_error().message.c_str());
+				forwards->ReleaseForward(forward);
+				return;
+			}
+			auto webhook = callback.get<dpp::webhook>();
+
+			g_TaskQueue.Push([this, &forward, webhook = new DiscordWebhook(webhook), value = value]() {
+				if (forward && forward->GetFunctionCount() == 0)
+				{
+					return;
+				}
+
+				HandleError err;
+				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+				Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, webhook, &sec, nullptr, &err);
+				if (webhookHandle == BAD_HANDLE)
+				{
+					smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
+					return;
+				}
+
+				forward->PushCell(m_discord_handle);
+				forward->PushCell(webhookHandle);
+				forward->PushCell(value);
+				forward->Execute(nullptr);
+
+				handlesys->FreeHandle(webhookHandle, &sec);
+
+				forwards->ReleaseForward(forward);
+            });
+		});
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to get create webhook: %s", e.what());
+		return false;
+	}
+}
+
 bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data)
 {
 	if (!m_isRunning) {
@@ -528,6 +578,42 @@ static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t*
 	}
 }
 
+static cell_t discord_CreateWebhook(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	char* name;
+	pContext->LocalToString(params[3], &name);
+
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+		dpp::webhook webhook;
+		webhook.name = name;
+		webhook.channel_id = channelFlake;
+
+		IPluginFunction *callback = pContext->GetFunctionById(params[4]);
+
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Any);
+		if (forward == nullptr || !forward->AddFunction(callback))
+		{
+			return pContext->ThrowNativeError("Could not create forward.");
+		}
+
+		cell_t data = params[5];
+		return discord->CreateWebhook(webhook, forward, data);
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return 0;
+	}
+}
+
 static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
@@ -820,6 +906,33 @@ static cell_t embed_SetImage(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static DiscordUser* GetUserPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordUser* user;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordUserHandle, &sec, (void**)&user)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord user handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return user;
+}
+
+// User natives
+static cell_t user_GetId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	if (!user) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], user->GetId().c_str());
+	return 1;
+}
+
 static DiscordMessage* GetMessagePointer(IPluginContext* pContext, Handle_t handle)
 {
 	HandleError err;
@@ -1013,6 +1126,29 @@ static cell_t webhook_GetId(IPluginContext* pContext, const cell_t* params)
 
 	pContext->StringToLocal(params[2], params[3], webhook->GetId().c_str());
 	return 1;
+}
+
+static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordWebhook* webhook = GetWebhookPointer(pContext, params[1]);
+	if (!webhook) {
+		return 0;
+	}
+
+	DiscordUser* pDiscordUser = webhook->GetUser();
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordUser;
+		pContext->ReportError("Could not create user handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
 }
 
 static cell_t webhook_GetName(IPluginContext* pContext, const cell_t* params)
@@ -1814,6 +1950,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.GetBotDiscriminator", discord_GetBotDiscriminator},
 	{"Discord.GetBotAvatarUrl",    discord_GetBotAvatarUrl},
 	{"Discord.SetPresence",      discord_SetPresence},
+	{"Discord.CreateWebhook",      discord_CreateWebhook},
 	{"Discord.GetChannelWebhooks",      discord_GetChannelWebhooks},
 	{"Discord.ExecuteWebhook",      discord_ExecuteWebhook},
 	{"Discord.SendMessage",      discord_SendMessage},
@@ -1829,6 +1966,9 @@ const sp_nativeinfo_t discord_natives[] = {
   	{"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
 	{"Discord.DeleteGuildCommand", discord_DeleteGuildCommand},
   	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
+
+	// User
+	{"DiscordUser.GetId",    user_GetId},
 
 	// Message
 	{"DiscordMessage.GetContent",    message_GetContent},
@@ -1848,6 +1988,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	// Webhook
 	{"DiscordWebhook.DiscordWebhook",webhook_CreateWebhook},
 	{"DiscordWebhook.GetId",       webhook_GetId},
+	{"DiscordWebhook.GetUser",       webhook_GetUser},
 	{"DiscordWebhook.GetName",       webhook_GetName},
 	{"DiscordWebhook.SetName",       webhook_SetName},
 	{"DiscordWebhook.GetAvatarUrl",       webhook_GetAvatarUrl},
