@@ -79,7 +79,7 @@ class DiscordWebhook
 {
 public:
 	dpp::webhook m_webhook;
-	DiscordWebhook(const dpp::webhook& wbhk) : m_webhook(wbhk) {m_webhook.avatar = dpp::utility::iconhash("");}
+	DiscordWebhook(const dpp::webhook& wbhk) : m_webhook(wbhk) {}
 
 	std::string GetId() const { return std::to_string(m_webhook.id); }
 
@@ -92,6 +92,10 @@ public:
 	const char* GetAvatarUrl() const { return m_webhook.avatar_url.c_str(); }
 
 	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
+
+	const char* GetAvatarData() const { return m_webhook.avatar.to_string().c_str(); }
+
+	void SetAvatarData(const char* value) { m_webhook.avatar = dpp::utility::iconhash(value); }
 };
 
 class DiscordClient

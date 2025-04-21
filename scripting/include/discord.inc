@@ -496,6 +496,21 @@ methodmap DiscordWebhook < Handle
    * @param name		New string to set the avatar_url to
    */
   public native void SetAvatarUrl(char[] avatarUrl);
+
+  /**
+   * Gets the avatar of the webhook
+   *
+   * @param buffer      Buffer to store the data
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAvatarData(char[] buffer, int maxlength);
+
+  /**
+   * Sets the avatar of the webhook
+   *
+   * @param name		New string to set the avatar to
+   */
+  public native void SetAvatarData(char[] avatar);
 }
 
 /**
