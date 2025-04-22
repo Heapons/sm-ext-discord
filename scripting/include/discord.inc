@@ -319,6 +319,34 @@ methodmap DiscordUser < Handle
    * @param maxlength   Maximum length of the buffer
    */
   public native void GetId(char[] buffer, int maxlength);
+
+  /**
+   * Gets the username of the user
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetUsername(char[] buffer, int maxlength);
+
+  /**
+   * Gets the discriminator of the user
+   */
+  public native int GetDiscriminator();
+
+  /**
+   * Gets the display name of the user
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetGlobalName(char[] buffer, int maxlength);
+
+  /**
+   * Checks if the user is a bot
+   *
+   * @return          true if user is bot, false otherwise
+   */
+  public native bool IsBot();
 }
 
 /**
@@ -359,27 +387,38 @@ methodmap DiscordMessage < Handle
   public native void GetGuildId(char[] buffer, int maxlength);
 
   /**
+   * Gets the user that sent the message
+   */
+  public native DiscordUser GetAuthor();
+
+  /**
+   * @deprecated Use GetAuthor().GetId() instead
    * Gets the ID of the message author
    *
    * @param buffer      Buffer to store the author ID
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetId() instead
   public native void GetAuthorId(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetUsername() instead
    * Gets the username of the message author
    *
    * @param buffer      Buffer to store the author name
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetUsername() instead
   public native void GetAuthorName(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetGlobalName() instead
    * Gets the global display name of the message author
    *
    * @param buffer      Buffer to store the display name
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetGlobalName() instead
   public native void GetAuthorDisplayName(char[] buffer, int maxlength);
 
   /**
@@ -391,13 +430,12 @@ methodmap DiscordMessage < Handle
   public native void GetAuthorNickname(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetDiscriminator() instead
    * Gets the discriminator of the message author
-   *
-   * @param buffer      Buffer to store the discriminator
-   * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetDiscriminator() instead
   public native int GetAuthorDiscriminator();
-  
+
   /**
    * Checks if the message is pinned
    *
@@ -620,6 +658,11 @@ methodmap DiscordInteraction < Handle
    * @param maxlen    Maximum length of the buffer
    */
   public native void GetChannelId(char[] buffer, int maxlen);
+
+  /**
+   * Gets the user who used the command
+   */
+  public native DiscordUser GetUser();
 
   /**
    * Gets the ID of the user who used the command

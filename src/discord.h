@@ -39,6 +39,14 @@ public:
 	DiscordUser(const dpp::user& user) : m_user(user) {}
 
 	std::string GetId() const { return std::to_string(m_user.id); }
+
+	const char* GetUsername() const { return m_user.username.c_str(); }
+
+	const uint16_t GetDiscriminator() const { return m_user.discriminator; }
+
+	const char* GetGlobalName() const { return m_user.global_name.c_str(); }
+
+	bool IsBot() const { return m_user.is_bot(); }
 };
 
 class DiscordMessage
@@ -49,6 +57,7 @@ private:
 public:
 	DiscordMessage(const dpp::message& msg) : m_message(msg) {}
 
+	DiscordUser* GetAuthor() const { return new DiscordUser(m_message.author); }
 	const char* GetContent() const { return m_message.content.c_str(); }
 	std::string GetMessageId() const { return std::to_string(m_message.id); }
 	std::string GetChannelId() const { return std::to_string(m_message.channel_id); }
@@ -171,6 +180,7 @@ public:
 	const char* GetCommandName() const { return m_commandName.c_str(); }
 	std::string GetGuildId() const { return std::to_string(m_interaction.command.guild_id); }
 	std::string GetChannelId() const { return std::to_string(m_interaction.command.channel_id); }
+	DiscordUser* GetUser() const { return new DiscordUser(m_interaction.command.usr); }
 	std::string GetUserId() const { return std::to_string(m_interaction.command.usr.id); }
 	const char* GetUserName() const { return m_interaction.command.usr.username.c_str(); }
 
