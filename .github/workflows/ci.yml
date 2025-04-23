@@ -3,21 +3,26 @@ name: build
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "main"
     paths:
-      - pushbuild.txt
+      - "scripting/**"
+      - "src/**"
   pull_request:
     paths:
-      - pushbuild.txt
+      - "scripting/**"
+      - "src/**"
 
 jobs:
   build:
-    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
+    name: Build Extension (sm${{ matrix.sm_version }}, ${{ matrix.os_short }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-22.04
           - windows-latest
         sm_version:
           - "1.11"
@@ -32,9 +37,12 @@ jobs:
             
           - os: windows-latest
             os_short: win
-            
+
           - os: ubuntu-latest
             os_short: linux
+
+          - os: ubuntu-22.04
+            os_short: linux-debian12
             
     steps:
       - name: Prepare env

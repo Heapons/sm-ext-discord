@@ -5,8 +5,9 @@
 DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
 
-HandleType_t g_DiscordHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle;
+HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle;
 DiscordHandler g_DiscordHandler;
+DiscordUserHandler g_DiscordUserHandler;
 DiscordMessageHandler g_DiscordMessageHandler;
 DiscordChannelHandler g_DiscordChannelHandler;
 DiscordWebhookHandler g_DiscordWebhookHandler;
@@ -39,6 +40,7 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	haDefaults.access[HandleAccess_Delete] = 0;
 
 	g_DiscordHandle = handlesys->CreateType("Discord", &g_DiscordHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_DiscordUserHandle = handlesys->CreateType("DiscordUser", &g_DiscordUserHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordMessageHandle = handlesys->CreateType("DiscordMessage", &g_DiscordMessageHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordChannelHandle = handlesys->CreateType("DiscordChannel", &g_DiscordChannelHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordWebhookHandle = handlesys->CreateType("DiscordWebhook", &g_DiscordWebhookHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
@@ -63,6 +65,7 @@ void DiscordExtension::SDK_OnUnload()
 	forwards->ReleaseForward(g_pForwardSlashCommand);
 	
 	handlesys->RemoveType(g_DiscordHandle, myself->GetIdentity());
+	handlesys->RemoveType(g_DiscordUserHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordMessageHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordChannelHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordWebhookHandle, myself->GetIdentity());
@@ -77,6 +80,12 @@ void DiscordHandler::OnHandleDestroy(HandleType_t type, void* object)
 	DiscordClient* discord = (DiscordClient*)object;
 	discord->Stop();
 	delete discord;
+}
+
+void DiscordUserHandler::OnHandleDestroy(HandleType_t type, void* object)
+{
+	DiscordUser* user = (DiscordUser*)object;
+	delete user;
 }
 
 void DiscordMessageHandler::OnHandleDestroy(HandleType_t type, void* object)

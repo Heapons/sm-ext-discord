@@ -54,6 +54,11 @@ typeset GetChannelWebhooksCallback
   function void (Discord discord, DiscordWebhook[] webhookMap, float count, any data);
 };
 
+typeset CreateWebhookCallback
+{
+  function void (Discord discord, DiscordWebhook webhook, any data);
+};
+
 /**
  * Discord bot client handle
  */
@@ -141,6 +146,17 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool ExecuteWebhook(DiscordWebhook wh, const char[] message);
+
+  /**
+   * Creates a webhook for a channel
+   *
+   * @param channelId Target channel ID
+   * @param name      Name of the webhook to be created
+   * @param callback  Method to run on success
+   * @param data      Arbitrary value to pass to the callback
+   * @return          true on success, false on failure
+   */
+  public native bool CreateWebhook(const char[] channelId, const char[] name, CreateWebhookCallback callback, any data = 0);
 
   /**
    * Gets all webhooks assigned to a channel
@@ -292,6 +308,48 @@ methodmap Discord < Handle {
 }
 
 /**
+ * Discord user handle
+ */
+methodmap DiscordUser < Handle
+{
+  /**
+   * Gets the ID of the user
+   *
+   * @param buffer      Buffer to store the ID
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetId(char[] buffer, int maxlength);
+
+  /**
+   * Gets the username of the user
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetUsername(char[] buffer, int maxlength);
+
+  /**
+   * Gets the discriminator of the user
+   */
+  public native int GetDiscriminator();
+
+  /**
+   * Gets the display name of the user
+   *
+   * @param buffer      Buffer to store the name
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetGlobalName(char[] buffer, int maxlength);
+
+  /**
+   * Checks if the user is a bot
+   *
+   * @return          true if user is bot, false otherwise
+   */
+  public native bool IsBot();
+}
+
+/**
  * Discord message handle
  */
 methodmap DiscordMessage < Handle
@@ -329,27 +387,38 @@ methodmap DiscordMessage < Handle
   public native void GetGuildId(char[] buffer, int maxlength);
 
   /**
+   * Gets the user that sent the message
+   */
+  public native DiscordUser GetAuthor();
+
+  /**
+   * @deprecated Use GetAuthor().GetId() instead
    * Gets the ID of the message author
    *
    * @param buffer      Buffer to store the author ID
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetId() instead
   public native void GetAuthorId(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetUsername() instead
    * Gets the username of the message author
    *
    * @param buffer      Buffer to store the author name
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetUsername() instead
   public native void GetAuthorName(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetGlobalName() instead
    * Gets the global display name of the message author
    *
    * @param buffer      Buffer to store the display name
    * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetGlobalName() instead
   public native void GetAuthorDisplayName(char[] buffer, int maxlength);
 
   /**
@@ -361,13 +430,12 @@ methodmap DiscordMessage < Handle
   public native void GetAuthorNickname(char[] buffer, int maxlength);
 
   /**
+   * @deprecated Use GetAuthor().GetDiscriminator() instead
    * Gets the discriminator of the message author
-   *
-   * @param buffer      Buffer to store the discriminator
-   * @param maxlength   Maximum length of the buffer
    */
+  #pragma deprecated Use GetAuthor().GetDiscriminator() instead
   public native int GetAuthorDiscriminator();
-  
+
   /**
    * Checks if the message is pinned
    *
@@ -433,6 +501,11 @@ methodmap DiscordWebhook < Handle
   public native void GetId(char[] buffer, int maxlength);
 
   /**
+   * Gets the user that created the webhook
+   */
+  public native DiscordUser GetUser();
+
+  /**
    * Gets the name of the webhook
    *
    * @param buffer      Buffer to store the name
@@ -461,6 +534,21 @@ methodmap DiscordWebhook < Handle
    * @param name		New string to set the avatar_url to
    */
   public native void SetAvatarUrl(char[] avatarUrl);
+
+  /**
+   * Gets the avatar of the webhook
+   *
+   * @param buffer      Buffer to store the data
+   * @param maxlength   Maximum length of the buffer
+   */
+  public native void GetAvatarData(char[] buffer, int maxlength);
+
+  /**
+   * Sets the avatar of the webhook
+   *
+   * @param name		New string to set the avatar to
+   */
+  public native void SetAvatarData(char[] avatar);
 }
 
 /**
@@ -570,6 +658,11 @@ methodmap DiscordInteraction < Handle
    * @param maxlen    Maximum length of the buffer
    */
   public native void GetChannelId(char[] buffer, int maxlen);
+
+  /**
+   * Gets the user who used the command
+   */
+  public native DiscordUser GetUser();
 
   /**
    * Gets the ID of the user who used the command
