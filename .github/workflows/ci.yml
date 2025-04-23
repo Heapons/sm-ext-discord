@@ -4,14 +4,16 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - pushbuild.txt
+      - "scripting/**"
+      - "src/**"
   pull_request:
     paths:
-      - pushbuild.txt
+      - "scripting/**"
+      - "src/**"
 
 jobs:
   build:
-    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
+    name: Build Extension (sm${{ matrix.sm_version }}, ${{ matrix.os_short }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
