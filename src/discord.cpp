@@ -965,6 +965,17 @@ static cell_t user_GetGlobalName(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t user_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	if (!user) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[3], params[4], user->GetAvatarUrl(params[2] ? true : false).c_str());
+	return 1;
+}
+
 static cell_t user_IsBot(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordUser* user = GetUserPointer(pContext, params[1]);
@@ -1098,7 +1109,7 @@ static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* 
 		return 0;
 	}
 
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname());
+	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname().c_str());
 	return 1;
 }
 
@@ -1271,7 +1282,7 @@ static cell_t webhook_GetAvatarData(IPluginContext* pContext, const cell_t* para
 		return 0;
 	}
 
-	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarData());
+	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarData().c_str());
 	return 1;
 }
 
@@ -2044,6 +2055,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordUser.GetUsername",    user_GetUsername},
 	{"DiscordUser.GetDiscriminator",    user_GetDiscriminator},
 	{"DiscordUser.GetGlobalName",    user_GetGlobalName},
+	{"DiscordUser.GetAvatarUrl",       user_GetAvatarUrl},
 	{"DiscordUser.IsBot",    user_IsBot},
 
 	// Message

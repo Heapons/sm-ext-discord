@@ -46,6 +46,8 @@ public:
 
 	const char* GetGlobalName() const { return m_user.global_name.c_str(); }
 
+	std::string GetAvatarUrl(bool prefer_animated_avatars) const { return m_user.get_avatar_url(0, dpp::i_png, prefer_animated_avatars); }
+
 	bool IsBot() const { return m_user.is_bot(); }
 };
 
@@ -65,7 +67,7 @@ public:
 	std::string GetAuthorId() const { return std::to_string(m_message.author.id); }
 	const char* GetAuthorName() const { return m_message.author.username.c_str(); }
 	const char* GetAuthorDisplayName() const { return m_message.author.global_name.c_str(); }
-	const char* GetAuthorNickname() const { return m_message.member.get_nickname().c_str(); }
+	std::string GetAuthorNickname() const { return m_message.member.get_nickname(); }
 	const uint16_t GetAuthorDiscriminator() const { return m_message.author.discriminator; }
 	bool IsPinned() const { return m_message.pinned; }
 	bool IsTTS() const { return m_message.tts; }
@@ -102,7 +104,7 @@ public:
 
 	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 
-	const char* GetAvatarData() const { return m_webhook.avatar.to_string().c_str(); }
+	std::string GetAvatarData() const { return m_webhook.avatar.to_string(); }
 
 	void SetAvatarData(const char* value) { m_webhook.avatar = dpp::utility::iconhash(value); }
 };

@@ -342,6 +342,15 @@ methodmap DiscordUser < Handle
   public native void GetGlobalName(char[] buffer, int maxlength);
 
   /**
+   * Gets the avatar url of the webhook
+   *
+   * @param preferAnimated Whether to return the gif version of animated avatars if they are available or not.
+   * @param buffer         Buffer to store the url
+   * @param maxlength      Maximum length of the buffer
+   */
+  public native void GetAvatarUrl(bool preferAnimated, char[] buffer, int maxlength);
+
+  /**
    * Checks if the user is a bot
    *
    * @return          true if user is bot, false otherwise
