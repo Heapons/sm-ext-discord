@@ -804,6 +804,35 @@ methodmap DiscordInteraction < Handle
 methodmap DiscordAutocompleteInteraction < Handle
 {
   /**
+   * Gets the name of the slash command
+   *
+   * @param buffer    Buffer to store the command name
+   * @param maxlen    Maximum length of the buffer
+   */
+  public native void GetCommandName(char[] buffer, int maxlen);
+
+  /**
+   * Gets the guild (server) ID where the command was used
+   *
+   * @param buffer    Buffer to store the guild ID
+   * @param maxlen    Maximum length of the buffer
+   */
+  public native void GetGuildId(char[] buffer, int maxlen);
+
+  /**
+   * Gets the channel ID where the command was used
+   *
+   * @param buffer    Buffer to store the channel ID
+   * @param maxlen    Maximum length of the buffer
+   */
+  public native void GetChannelId(char[] buffer, int maxlen);
+
+  /**
+   * Gets the user who used the command
+   */
+  public native DiscordUser GetUser();
+
+  /**
    * Gets a string option value from the command
    *
    * @param name      Name of the option

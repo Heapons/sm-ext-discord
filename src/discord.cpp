@@ -1718,6 +1718,65 @@ static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPlugin
 }
 
 // Autocomplete natives
+static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	const char* commandName = interaction->GetCommandName();
+	pContext->StringToLocal(params[2], params[3], commandName);
+	return 1;
+}
+
+static cell_t autocomplete_GetGuildId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string guildId = interaction->GetGuildId();
+	pContext->StringToLocal(params[2], params[3], guildId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string channelId = interaction->GetChannelId();
+	pContext->StringToLocal(params[2], params[3], channelId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordUser* pDiscordUser = interaction->GetUser();
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordUser;
+		pContext->ReportError("Could not create user handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
 static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
@@ -1819,7 +1878,7 @@ static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, 
 		return 0;
 	}
 
-	discord->CreateAutocompleteResponse(interaction->m_interaction.id, interaction->m_interaction.token, interaction->m_response);
+	discord->CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
 	return 1;
 }
 
@@ -2381,6 +2440,10 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordInteraction.GetUserName", interaction_GetUserName},
 
 	// Autocomplete
+	{"DiscordAutocompleteInteraction.GetCommandName", autocomplete_GetCommandName},
+	{"DiscordAutocompleteInteraction.GetGuildId", autocomplete_GetGuildId},
+	{"DiscordAutocompleteInteraction.GetChannelId", autocomplete_GetChannelId},
+	{"DiscordAutocompleteInteraction.GetUser",       autocomplete_GetUser},
 	{"DiscordAutocompleteInteraction.GetOptionValue", autocomplete_GetOptionValue},
 	{"DiscordAutocompleteInteraction.GetOptionValueInt", autocomplete_GetOptionValueInt},
 	{"DiscordAutocompleteInteraction.GetOptionValueFloat", autocomplete_GetOptionValueFloat},

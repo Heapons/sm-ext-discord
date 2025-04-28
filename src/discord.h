@@ -260,16 +260,21 @@ class DiscordAutocompleteInteraction
 public:
 	dpp::interaction_response m_response;
 	std::string m_commandName;
-	dpp::interaction m_interaction;
+	dpp::interaction m_command;
 	dpp::autocomplete_t m_autocomplete;
 
 	DiscordAutocompleteInteraction(const dpp::autocomplete_t& autocomplete) :
 		m_response(dpp::ir_autocomplete_reply),
 		m_commandName(autocomplete.command.get_command_name()),
-		m_interaction(autocomplete.command),
+		m_command(autocomplete.command),
 		m_autocomplete(autocomplete)
 	{
 	}
+
+	const char* GetCommandName() const { return m_commandName.c_str(); }
+	std::string GetGuildId() const { return std::to_string(m_command.guild_id); }
+	std::string GetChannelId() const { return std::to_string(m_command.channel_id); }
+	DiscordUser* GetUser() const { return new DiscordUser(m_command.usr); }
 
 	dpp::command_option GetOption(const char* name) const {
 		for (auto & opt : m_autocomplete.options) {
