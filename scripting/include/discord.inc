@@ -203,7 +203,7 @@ methodmap Discord < Handle {
    * @param channel_id    Channel ID
    * @param message_id    Message ID
    * @param content       New message content
-   * @return             true on success, false on failure
+   * @return              true on success, false on failure
    */
   public native bool EditMessage(const char[] channel_id, const char[] message_id, const char[] content);
 
@@ -214,7 +214,7 @@ methodmap Discord < Handle {
    * @param message_id    Message ID
    * @param content       New message content
    * @param embed         Embed object
-   * @return             true on success, false on failure
+   * @return              true on success, false on failure
    */
   public native bool EditMessageEmbed(const char[] channel_id, const char[] message_id, const char[] content, DiscordEmbed embed);
 
@@ -223,7 +223,7 @@ methodmap Discord < Handle {
    *
    * @param channel_id    Channel ID
    * @param message_id    Message ID
-   * @return             true on success, false on failure
+   * @return              true on success, false on failure
    */
   public native bool DeleteMessage(const char[] channel_id, const char[] message_id);
 
@@ -233,60 +233,70 @@ methodmap Discord < Handle {
    * @param guild_id      Guild ID
    * @param name          Command name
    * @param description   Command description
-   * @return             true on success, false on failure
+   * @param permissions   Default command permissions uint64
+   * @return              true on success, false on failure
    */
-  public native bool RegisterSlashCommand(const char[] guild_id, const char[] name, const char[] description);
+  public native bool RegisterSlashCommand(const char[] guild_id, const char[] name, const char[] description, const char[] permissions = "");
 
   /**
    * Registers a global slash command
    *
    * @param name          Command name
    * @param description   Command description
-   * @return             true on success, false on failure
+   * @param permissions   Default command permissions uint64
+   * @return              true on success, false on failure
    */
-  public native bool RegisterGlobalSlashCommand(const char[] name, const char[] description);
+  public native bool RegisterGlobalSlashCommand(const char[] name, const char[] description, const char[] permissions = "");
 
   /**
    * Registers a slash command with options for a specific guild
    *
-   * @param guild_id      Guild ID
-   * @param name          Command name
-   * @param description   Command description
-   * @param option_names  Array of option names
+   * @param guild_id      		Guild ID
+   * @param name          		Command name
+   * @param description   		Command description
+   * @param permissions   		Default command permissions uint64
+   * @param option_names  		Array of option names
    * @param option_descriptions Array of option descriptions
-   * @param option_types  Array of option types
-   * @param option_required Array of option required flags
-   * @param num_options   Number of options
-   * @return             true on success, false on failure
+   * @param option_types  		Array of option types
+   * @param option_required 	Array of option required flags
+   * @param option_autocomplete Array of option autocomplete flags
+   * @param num_options   		Number of options
+   * @return             		true on success, false on failure
    */
   public native bool RegisterSlashCommandWithOptions(const char[] guild_id, 
       const char[] name, 
-      const char[] description, 
+      const char[] description,
+      const char[] permissions = "",
       const char[][] option_names,
       const char[][] option_descriptions,
       const DiscordCommandOptionType[] option_types,
       const bool[] option_required,
+      const bool[] option_autocomplete,
       int num_options);
 
   /**
    * Registers a global slash command with options
    *
-   * @param name          Command name
-   * @param description   Command description
-   * @param option_names  Array of option names
+   * @param name          		Command name
+   * @param description   		Command description
+   * @param permissions   		Default command permissions uint64
+   * @param option_names  		Array of option names
    * @param option_descriptions Array of option descriptions
-   * @param option_types  Array of option types
-   * @param option_required Array of option required flags
-   * @param num_options   Number of options
-   * @return             true on success, false on failure
+   * @param option_types  		Array of option types
+   * @param option_required 	Array of option required flags
+   * @param option_autocomplete Array of option autocomplete flags
+   * @param num_options   		Number of options
+   * @return             		true on success, false on failure
    */
   public native bool RegisterGlobalSlashCommandWithOptions(
       const char[] name, 
-      const char[] description, 
+      const char[] description,
+      const char[] permissions = "",
       const char[][] option_names,
       const char[][] option_descriptions,
       const DiscordCommandOptionType[] option_types,
       const bool[] option_required,
+      const bool[] option_autocomplete,
       int num_options);
 
   /**
@@ -294,7 +304,7 @@ methodmap Discord < Handle {
    *
    * @param guild_id      Guild ID where the command exists
    * @param command_id    ID of the command to delete
-   * @return             true on success, false on failure
+   * @return              true on success, false on failure
    */
   public native bool DeleteGuildCommand(const char[] guild_id, const char[] command_id);
 
@@ -302,9 +312,24 @@ methodmap Discord < Handle {
    * Deletes a global slash command
    *
    * @param command_id    ID of the command to delete
-   * @return             true on success, false on failure
+   * @return              true on success, false on failure
    */
   public native bool DeleteGlobalCommand(const char[] command_id);
+
+  /**
+   * Deletes all commands that have been registered for a specific guild
+   *
+   * @param guild_id     ID of the guild to delete commands for
+   * @return             true on success, false on failure
+   */
+  public native bool BulkDeleteGuildCommands(const char[] guild_id);
+
+  /**
+   * Deletes all commands that have been registered globally
+   *
+   * @return             true on success, false on failure
+   */
+  public native bool BulkDeleteGlobalCommands();
 }
 
 /**
@@ -776,6 +801,57 @@ methodmap DiscordInteraction < Handle
   public native void CreateEphemeralResponseEmbed(const char[] content, DiscordEmbed embed);
 }
 
+methodmap DiscordAutocompleteInteraction < Handle
+{
+  /**
+   * Gets a string option value from the command
+   *
+   * @param name      Name of the option
+   * @param buffer    Buffer to store the option value
+   * @param maxlen    Maximum length of the buffer
+   * @return          true if option exists and is string type, false otherwise
+   */
+  public native bool GetOptionValue(const char[] name, char[] buffer, int maxlen);
+
+  /**
+   * Gets an integer option value from the command
+   *
+   * @param name      Name of the option
+   * @return          Integer value of the option, 0 if option doesn't exist
+   */
+  public native int GetOptionValueInt(const char[] name);
+
+  /**
+   * Gets a float option value from the command
+   *
+   * @param name      Name of the option
+   * @return          Float value of the option, 0.0 if option doesn't exist
+   */
+  public native float GetOptionValueFloat(const char[] name);
+
+  /**
+   * Gets a boolean option value from the command
+   *
+   * @param name      Name of the option
+   * @return          Boolean value of the option, false if option doesn't exist
+   */
+  public native bool GetOptionValueBool(const char[] name);
+
+  /**
+   * Adds a choice to the autocomplete results that will be included in the response.
+   *
+   * @param name	  The name that will appear to the user for this autocomplete result
+   * @param type	  The option type of the value to be passed
+   * @param value	  The actual value that will be used in the option when it is sent
+   */
+  public native void AddAutocompleteChoice(const char[] name, DiscordCommandOptionType type, any value);
+
+  /**
+   * Creates and sends the autocomplete response.
+  */
+  public native void CreateAutocompleteResponse(Discord discord);
+}
+
 /**
  * Called when Discord bot is ready
  *
@@ -798,6 +874,17 @@ forward void Discord_OnMessage(Discord discord, DiscordMessage message);
  * @param interaction  Interaction handle
  */
 forward void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction);
+
+/**
+ * Called when an autocomplete request for a specific option is received
+ *
+ * @param discord      Discord client handle
+ * @param interaction  Autocomplete Interaction handle
+ * @param focused  	   If the current option is the one focused by the user
+ * @param type  	   The current option type
+ * @param optionName   The name of the current option
+ */
+forward void Discord_OnAutocomplete(Discord discord, DiscordAutocompleteInteraction interaction, bool focused, DiscordCommandOptionType type, char[] optionName);
 
 /**
  * Called when an error occurs
