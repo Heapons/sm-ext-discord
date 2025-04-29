@@ -1858,7 +1858,7 @@ static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const
 			value = sp_ctof(params[4]);
 			break;
 		default:
-			value = params[4];
+			value = (int64_t)params[4];
 			break;
 	}
 
