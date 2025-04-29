@@ -256,10 +256,10 @@ methodmap Discord < Handle {
    * @param description   		Command description
    * @param permissions   		Default command permissions uint64
    * @param option_names  		Array of option names
-   * @param option_descriptions Array of option descriptions
+   * @param option_descriptions	Array of option descriptions
    * @param option_types  		Array of option types
-   * @param option_required 	Array of option required flags
-   * @param option_autocomplete Array of option autocomplete flags
+   * @param option_required		Array of option required flags
+   * @param option_autocomplete	Array of option autocomplete flags
    * @param num_options   		Number of options
    * @return             		true on success, false on failure
    */
@@ -281,10 +281,10 @@ methodmap Discord < Handle {
    * @param description   		Command description
    * @param permissions   		Default command permissions uint64
    * @param option_names  		Array of option names
-   * @param option_descriptions Array of option descriptions
+   * @param option_descriptions	Array of option descriptions
    * @param option_types  		Array of option types
-   * @param option_required 	Array of option required flags
-   * @param option_autocomplete Array of option autocomplete flags
+   * @param option_required		Array of option required flags
+   * @param option_autocomplete	Array of option autocomplete flags
    * @param num_options   		Number of options
    * @return             		true on success, false on failure
    */
@@ -907,11 +907,11 @@ forward void Discord_OnSlashCommand(Discord discord, DiscordInteraction interact
 /**
  * Called when an autocomplete request for a specific option is received
  *
- * @param discord      Discord client handle
- * @param interaction  Autocomplete Interaction handle
- * @param focused  	   If the current option is the one focused by the user
- * @param type  	   The current option type
- * @param optionName   The name of the current option
+ * @param discord		Discord client handle
+ * @param interaction	Autocomplete Interaction handle
+ * @param focused		If the current option is the one focused by the user
+ * @param type			The current option type
+ * @param optionName	The name of the current option
  */
 forward void Discord_OnAutocomplete(Discord discord, DiscordAutocompleteInteraction interaction, bool focused, DiscordCommandOptionType type, char[] optionName);
 
