@@ -1702,6 +1702,17 @@ static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* pa
 	return 1;
 }
 
+static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
+}
+
 static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPluginContext* pContext, Handle_t handle)
 {
 	HandleError err;
@@ -1775,6 +1786,17 @@ static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* param
 	}
 
 	return handle;
+}
+
+static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
 }
 
 static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
@@ -2436,6 +2458,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordInteraction.GetGuildId", interaction_GetGuildId},
 	{"DiscordInteraction.GetChannelId", interaction_GetChannelId},
 	{"DiscordInteraction.GetUser",       interaction_GetUser},
+	{"DiscordInteraction.GetUserNickname", interaction_GetUserNickname},
 	{"DiscordInteraction.GetUserId", interaction_GetUserId},
 	{"DiscordInteraction.GetUserName", interaction_GetUserName},
 
@@ -2444,6 +2467,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordAutocompleteInteraction.GetGuildId", autocomplete_GetGuildId},
 	{"DiscordAutocompleteInteraction.GetChannelId", autocomplete_GetChannelId},
 	{"DiscordAutocompleteInteraction.GetUser",       autocomplete_GetUser},
+	{"DiscordAutocompleteInteraction.GetUserNickname", autocomplete_GetUserNickname},
 	{"DiscordAutocompleteInteraction.GetOptionValue", autocomplete_GetOptionValue},
 	{"DiscordAutocompleteInteraction.GetOptionValueInt", autocomplete_GetOptionValueInt},
 	{"DiscordAutocompleteInteraction.GetOptionValueFloat", autocomplete_GetOptionValueFloat},

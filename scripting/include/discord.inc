@@ -699,6 +699,14 @@ methodmap DiscordInteraction < Handle
   public native DiscordUser GetUser();
 
   /**
+   * Gets the nickname of the user who used the command relative to the guild it was used in
+   *
+   * @param buffer    Buffer to store the nickname
+   * @param maxlen    Maximum length of the buffer
+   */
+  public native void GetUserNickname(char[] buffer, int maxlen);
+
+  /**
    * Gets the ID of the user who used the command
    *
    * @param buffer    Buffer to store the user ID
@@ -831,6 +839,14 @@ methodmap DiscordAutocompleteInteraction < Handle
    * Gets the user who used the command
    */
   public native DiscordUser GetUser();
+
+  /**
+   * Gets the nickname of the user who used the command relative to the guild it was used in
+   *
+   * @param buffer    Buffer to store the nickname
+   * @param maxlen    Maximum length of the buffer
+   */
+  public native void GetUserNickname(char[] buffer, int maxlen);
 
   /**
    * Gets a string option value from the command

@@ -188,6 +188,7 @@ public:
 	DiscordUser* GetUser() const { return new DiscordUser(m_interaction.command.usr); }
 	std::string GetUserId() const { return std::to_string(m_interaction.command.usr.id); }
 	const char* GetUserName() const { return m_interaction.command.usr.username.c_str(); }
+	std::string GetUserNickname() const { return m_interaction.command.member.get_nickname(); }
 
 	bool GetOptionValue(const char* name, std::string& value) const {
 		auto param = m_interaction.get_parameter(name);
@@ -275,6 +276,7 @@ public:
 	std::string GetGuildId() const { return std::to_string(m_command.guild_id); }
 	std::string GetChannelId() const { return std::to_string(m_command.channel_id); }
 	DiscordUser* GetUser() const { return new DiscordUser(m_command.usr); }
+	std::string GetUserNickname() const { return m_command.member.get_nickname(); }
 
 	dpp::command_option GetOption(const char* name) const {
 		for (auto & opt : m_autocomplete.options) {
