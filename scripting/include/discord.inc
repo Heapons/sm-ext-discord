@@ -907,6 +907,7 @@ forward void Discord_OnSlashCommand(Discord discord, DiscordInteraction interact
 /**
  * Called when an autocomplete request for a specific option is received
  *
+ * @note Discord requires this forward to give back a response for one of the options within 500ms.
  * @param discord		Discord client handle
  * @param interaction	Autocomplete Interaction handle
  * @param focused		If the current option is the one focused by the user
