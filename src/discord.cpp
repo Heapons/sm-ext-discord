@@ -598,7 +598,7 @@ static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t*
 
 		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
 
-		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Array, Param_Float, Param_Any);
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Array, Param_Cell, Param_Any);
 		if (forward == nullptr || !forward->AddFunction(callback))
 		{
 			return pContext->ThrowNativeError("Could not create forward.");

@@ -51,7 +51,7 @@ typeset GetChannelCallback
 
 typeset GetChannelWebhooksCallback
 {
-  function void (Discord discord, DiscordWebhook[] webhookMap, float count, any data);
+  function void (Discord discord, DiscordWebhook[] webhookMap, int count, any data);
 };
 
 typeset CreateWebhookCallback
