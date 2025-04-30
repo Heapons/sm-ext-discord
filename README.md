@@ -110,26 +110,30 @@ public void OnPluginStart()
   char option_descriptions[3][256];
   DiscordCommandOptionType option_types[3];
   bool option_required[3];
+  bool option_autocomplete[3];
   
   // Player option
   strcopy(option_names[0], sizeof(option_names[]), "player");
   strcopy(option_descriptions[0], sizeof(option_descriptions[]), "Select a player");
   option_types[0] = Option_String;
   option_required[0] = true;
+  option_autocomplete[0] = true;
   
   // Duration option
   strcopy(option_names[1], sizeof(option_names[]), "duration");
   strcopy(option_descriptions[1], sizeof(option_descriptions[]), "Ban duration in minutes");
   option_types[1] = Option_Integer;
   option_required[1] = true;
+  option_autocomplete[1] = false;
   
   // Reason option
   strcopy(option_names[2], sizeof(option_names[]), "reason");
   strcopy(option_descriptions[2], sizeof(option_descriptions[]), "Ban reason");
   option_types[2] = Option_String;
   option_required[2] = false;
+  option_autocomplete[2] = false;
   
-  g_Discord.RegisterGlobalSlashCommandWithOptions("ban", "Ban a player from the server", option_names, option_descriptions, option_types, option_required, 3);
+  g_Discord.RegisterGlobalSlashCommandWithOptions("ban", "Ban a player from the server", "0", option_names, option_descriptions, option_types, option_required, option_autocomplete, 3);
 }
 ```
 
@@ -152,9 +156,11 @@ public void SendEmbed()
 ## Available Features
 * Basic bot operations (start, stop, status)
 * Message sending and management
+* Webhook support (Creation and execution)
 * Slash command registration and handling
+* Slash command autocomplete handling
 * Rich embed support
-* Event handling (ready, messages, commands, errors)
+* Event handling (ready, messages, commands, autocomplete, errors)
 * Command option support (string, integer, boolean, user, channel, role)
 
 ## Notes

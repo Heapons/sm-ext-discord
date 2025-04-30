@@ -183,7 +183,7 @@ bool DiscordClient::GetChannelWebhooks(dpp::snowflake channel_id, IForward *call
 
 				forward->PushCell(m_discord_handle);
 				forward->PushArray(handles.get(), webhook_count);
-				forward->PushFloat(webhook_count);
+				forward->PushCell(webhook_count);
 				forward->PushCell(value);
 				forward->Execute(nullptr);
 
@@ -381,6 +381,41 @@ void DiscordClient::SetupEventHandlers()
 			}
 			});
 		});
+
+	m_cluster->on_autocomplete([this](const dpp::autocomplete_t& event) {
+		g_TaskQueue.Push([this, event]() {
+			if (g_pForwardAutocomplete && g_pForwardAutocomplete->GetFunctionCount()) {
+				DiscordAutocompleteInteraction* interaction = new DiscordAutocompleteInteraction(event);
+
+				HandleError err;
+				HandleSecurity sec;
+				sec.pOwner = myself->GetIdentity();
+				sec.pIdentity = myself->GetIdentity();
+
+				Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordAutocompleteInteractionHandle,
+						interaction,
+						&sec,
+						nullptr,
+						&err);
+
+				if (interactionHandle != BAD_HANDLE) {
+					std::string str;
+					for (auto & opt : event.options) {
+						dpp::command_option_type type = opt.type;
+
+						g_pForwardAutocomplete->PushCell(m_discord_handle);
+						g_pForwardAutocomplete->PushCell(interactionHandle);
+						g_pForwardAutocomplete->PushCell(opt.focused ? 1 : 0);
+						g_pForwardAutocomplete->PushCell(type);
+						g_pForwardAutocomplete->PushString(opt.name.c_str());
+						g_pForwardAutocomplete->Execute(nullptr);
+					}
+	        	}
+
+				handlesys->FreeHandle(interactionHandle, &sec);
+			}
+		});
+	});
 }
 
 // Natives Implementation
@@ -563,7 +598,7 @@ static cell_t discord_GetChannelWebhooks(IPluginContext* pContext, const cell_t*
 
 		IPluginFunction *callback = pContext->GetFunctionById(params[3]);
 
-		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Array, Param_Float, Param_Any);
+		IChangeableForward *forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Array, Param_Cell, Param_Any);
 		if (forward == nullptr || !forward->AddFunction(callback))
 		{
 			return pContext->ThrowNativeError("Could not create forward.");
@@ -965,6 +1000,17 @@ static cell_t user_GetGlobalName(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t user_GetAvatarUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	if (!user) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[3], params[4], user->GetAvatarUrl(params[2] ? true : false).c_str());
+	return 1;
+}
+
 static cell_t user_IsBot(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordUser* user = GetUserPointer(pContext, params[1]);
@@ -1098,7 +1144,7 @@ static cell_t message_GetAuthorNickname(IPluginContext* pContext, const cell_t* 
 		return 0;
 	}
 
-	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname());
+	pContext->StringToLocal(params[2], params[3], message->GetAuthorNickname().c_str());
 	return 1;
 }
 
@@ -1271,7 +1317,7 @@ static cell_t webhook_GetAvatarData(IPluginContext* pContext, const cell_t* para
 		return 0;
 	}
 
-	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarData());
+	pContext->StringToLocal(params[2], params[3], webhook->GetAvatarData().c_str());
 	return 1;
 }
 
@@ -1288,7 +1334,7 @@ static cell_t webhook_SetAvatarData(IPluginContext* pContext, const cell_t* para
 	return 1;
 }
 
-bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description)
+bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions)
 {
 	if (!m_isRunning) {
 		return false;
@@ -1299,6 +1345,10 @@ bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* na
 		command.set_name(name)
 			.set_description(description)
 			.set_application_id(m_cluster->me.id);
+
+		if ((default_permissions != NULL) && (default_permissions[0] != '\0')) {
+			command.set_default_permissions(std::stoull(default_permissions));
+		}
 
 		m_cluster->guild_command_create(command, guild_id);
 		return true;
@@ -1309,7 +1359,7 @@ bool DiscordClient::RegisterSlashCommand(dpp::snowflake guild_id, const char* na
 	}
 }
 
-bool DiscordClient::RegisterGlobalSlashCommand(const char* name, const char* description)
+bool DiscordClient::RegisterGlobalSlashCommand(const char* name, const char* description, const char* default_permissions)
 {
 	if (!m_isRunning) {
 		return false;
@@ -1320,6 +1370,10 @@ bool DiscordClient::RegisterGlobalSlashCommand(const char* name, const char* des
 		command.set_name(name)
 			.set_description(description)
 			.set_application_id(m_cluster->me.id);
+
+		if ((default_permissions != NULL) && (default_permissions[0] != '\0')) {
+			command.set_default_permissions(std::stoull(default_permissions));
+		}
 
 		m_cluster->global_command_create(command);
 		return true;
@@ -1346,9 +1400,12 @@ static cell_t discord_RegisterSlashCommand(IPluginContext* pContext, const cell_
 	char* description;
 	pContext->LocalToString(params[4], &description);
 
+	char* permissions;
+	pContext->LocalToString(params[5], &permissions);
+
 	try {
 		dpp::snowflake guild = std::stoull(guildId);
-		return discord->RegisterSlashCommand(guild, name, description) ? 1 : 0;
+		return discord->RegisterSlashCommand(guild, name, description, permissions) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid guild ID format: %s", guildId);
@@ -1369,7 +1426,10 @@ static cell_t discord_RegisterGlobalSlashCommand(IPluginContext* pContext, const
 	char* description;
 	pContext->LocalToString(params[3], &description);
 
-	return discord->RegisterGlobalSlashCommand(name, description) ? 1 : 0;
+	char* permissions;
+	pContext->LocalToString(params[4], &permissions);
+
+	return discord->RegisterGlobalSlashCommand(name, description, permissions) ? 1 : 0;
 }
 
 static DiscordInteraction* GetInteractionPointer(IPluginContext* pContext, Handle_t handle)
@@ -1642,6 +1702,213 @@ static cell_t interaction_GetUserName(IPluginContext* pContext, const cell_t* pa
 	return 1;
 }
 
+static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
+}
+
+static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordAutocompleteInteraction* interaction;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordAutocompleteInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord autocomplete interaction handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return interaction;
+}
+
+// Autocomplete natives
+static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	const char* commandName = interaction->GetCommandName();
+	pContext->StringToLocal(params[2], params[3], commandName);
+	return 1;
+}
+
+static cell_t autocomplete_GetGuildId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string guildId = interaction->GetGuildId();
+	pContext->StringToLocal(params[2], params[3], guildId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	std::string channelId = interaction->GetChannelId();
+	pContext->StringToLocal(params[2], params[3], channelId.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordUser* pDiscordUser = interaction->GetUser();
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE)
+	{
+		delete pDiscordUser;
+		pContext->ReportError("Could not create user handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t autocomplete_GetUserNickname(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetOptionValue(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	std::string value = interaction->GetOptionValue(name);
+	pContext->StringToLocal(params[3], params[4], value.c_str());
+	return 1;
+}
+
+static cell_t autocomplete_GetOptionValueInt(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	int64_t value = interaction->GetOptionValueInt(name);
+	return value;
+}
+
+static cell_t autocomplete_GetOptionValueFloat(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	double value = interaction->GetOptionValueDouble(name);
+	return sp_ftoc((float)value);
+}
+
+static cell_t autocomplete_GetOptionValueBool(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	bool value = interaction->GetOptionValueBool(name);
+	return value;
+}
+
+static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	dpp::command_value value;
+	dpp::command_option_type type = static_cast<dpp::command_option_type>(params[3]);
+	switch(type) {
+		case dpp::co_string:
+		{
+			char* str_value;
+			pContext->LocalToString(params[4], &str_value);
+			value = std::string(str_value);
+			break;
+		}
+		case dpp::co_number:
+			value = sp_ctof(params[4]);
+			break;
+		default:
+			value = (int64_t)params[4];
+			break;
+	}
+
+	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, value));
+	return 1;
+}
+
+static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	DiscordClient* discord = GetDiscordPointer(pContext, params[2]);
+	if (!discord) {
+		return 0;
+	}
+
+	discord->CreateAutocompleteResponse(interaction->m_command.id, interaction->m_command.token, interaction->m_response);
+	return 1;
+}
+
+void DiscordClient::CreateAutocompleteResponse(dpp::snowflake id, const std::string &token, const dpp::interaction_response &response)
+{
+	m_cluster->interaction_response_create(id, token, response);
+}
+
 bool DiscordClient::EditMessage(dpp::snowflake channel_id, dpp::snowflake message_id, const char* content)
 {
 	if (!m_isRunning) {
@@ -1786,7 +2053,7 @@ static cell_t discord_DeleteMessage(IPluginContext* pContext, const cell_t* para
 	}
 }
 
-bool DiscordClient::RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description,
+bool DiscordClient::RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions,
 	const std::vector<dpp::command_option>& options)
 {
 	if (!m_isRunning) {
@@ -1798,6 +2065,10 @@ bool DiscordClient::RegisterSlashCommandWithOptions(dpp::snowflake guild_id, con
 		command.set_name(name)
 			.set_description(description)
 			.set_application_id(m_cluster->me.id);
+
+		if ((default_permissions != NULL) && (default_permissions[0] != '\0')) {
+			command.set_default_permissions(std::stoull(default_permissions));
+		}
 
 		command.options = options;
 		m_cluster->guild_command_create(command, guild_id);
@@ -1809,7 +2080,7 @@ bool DiscordClient::RegisterSlashCommandWithOptions(dpp::snowflake guild_id, con
 	}
 }
 
-bool DiscordClient::RegisterGlobalSlashCommandWithOptions(const char* name, const char* description,
+bool DiscordClient::RegisterGlobalSlashCommandWithOptions(const char* name, const char* description, const char* default_permissions,
 	const std::vector<dpp::command_option>& options)
 {
 	if (!m_isRunning) {
@@ -1821,6 +2092,10 @@ bool DiscordClient::RegisterGlobalSlashCommandWithOptions(const char* name, cons
 		command.set_name(name)
 			.set_description(description)
 			.set_application_id(m_cluster->me.id);
+
+		if ((default_permissions != NULL) && (default_permissions[0] != '\0')) {
+			command.set_default_permissions(std::stoull(default_permissions));
+		}
 
 		command.options = options;
 		m_cluster->global_command_create(command);
@@ -1848,17 +2123,22 @@ static cell_t discord_RegisterSlashCommandWithOptions(IPluginContext* pContext, 
 	char* description;
 	pContext->LocalToString(params[4], &description);
 
+	char* permissions;
+	pContext->LocalToString(params[5], &permissions);
+
 	cell_t* option_names_array;
 	cell_t* option_descriptions_array;
 	cell_t* option_types_array;
 	cell_t* option_required_array;
+	cell_t* option_autocomplete_array;
 
-	pContext->LocalToPhysAddr(params[5], &option_names_array);
-	pContext->LocalToPhysAddr(params[6], &option_descriptions_array);
-	pContext->LocalToPhysAddr(params[7], &option_types_array);
-	pContext->LocalToPhysAddr(params[8], &option_required_array);
+	pContext->LocalToPhysAddr(params[6], &option_names_array);
+	pContext->LocalToPhysAddr(params[7], &option_descriptions_array);
+	pContext->LocalToPhysAddr(params[8], &option_types_array);
+	pContext->LocalToPhysAddr(params[9], &option_required_array);
+	pContext->LocalToPhysAddr(params[10], &option_autocomplete_array);
 
-	cell_t optionsSize = params[9];
+	cell_t optionsSize = params[11];
 
 	std::vector<dpp::command_option> options;
 
@@ -1875,13 +2155,14 @@ static cell_t discord_RegisterSlashCommandWithOptions(IPluginContext* pContext, 
 			option_description,
 			option_required_array[i]
 		);
+		cmd_option.set_auto_complete(option_autocomplete_array[i]);
 
 		options.push_back(cmd_option);
 	}
 
 	try {
 		dpp::snowflake guild = std::stoull(guildId);
-		return discord->RegisterSlashCommandWithOptions(guild, name, description, options) ? 1 : 0;
+		return discord->RegisterSlashCommandWithOptions(guild, name, description, permissions, options) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid guild ID format: %s", guildId);
@@ -1902,17 +2183,22 @@ static cell_t discord_RegisterGlobalSlashCommandWithOptions(IPluginContext* pCon
 	char* description;
 	pContext->LocalToString(params[3], &description);
 
+	char* permissions;
+	pContext->LocalToString(params[4], &permissions);
+
 	cell_t* option_names_array;
 	cell_t* option_descriptions_array;
 	cell_t* option_types_array;
 	cell_t* option_required_array;
+	cell_t* option_autocomplete_array;
 
-	pContext->LocalToPhysAddr(params[4], &option_names_array);
-	pContext->LocalToPhysAddr(params[5], &option_descriptions_array);
-	pContext->LocalToPhysAddr(params[6], &option_types_array);
-	pContext->LocalToPhysAddr(params[7], &option_required_array);
+	pContext->LocalToPhysAddr(params[5], &option_names_array);
+	pContext->LocalToPhysAddr(params[6], &option_descriptions_array);
+	pContext->LocalToPhysAddr(params[7], &option_types_array);
+	pContext->LocalToPhysAddr(params[8], &option_required_array);
+	pContext->LocalToPhysAddr(params[9], &option_autocomplete_array);
 
-	cell_t optionsSize = params[8];
+	cell_t optionsSize = params[10];
 
 	std::vector<dpp::command_option> options;
 
@@ -1929,11 +2215,12 @@ static cell_t discord_RegisterGlobalSlashCommandWithOptions(IPluginContext* pCon
 			option_description,
 			option_required_array[i]
 		);
+		cmd_option.set_auto_complete(option_autocomplete_array[i]);
 
 		options.push_back(cmd_option);
 	}
 
-	return discord->RegisterGlobalSlashCommandWithOptions(name, description, options) ? 1 : 0;
+	return discord->RegisterGlobalSlashCommandWithOptions(name, description, permissions, options) ? 1 : 0;
 }
 
 bool DiscordClient::DeleteGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id)
@@ -1964,6 +2251,38 @@ bool DiscordClient::DeleteGlobalCommand(dpp::snowflake command_id)
 	}
 	catch (const std::exception& e) {
 		smutils->LogError(myself, "Failed to delete global command: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::BulkDeleteGuildCommands(dpp::snowflake guild_id)
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->guild_bulk_command_delete(guild_id);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to bulk delete guild commands: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::BulkDeleteGlobalCommands()
+{
+	if (!m_isRunning) {
+		return false;
+	}
+
+	try {
+		m_cluster->global_bulk_command_delete();
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to bulk delete global commands: %s", e.what());
 		return false;
 	}
 }
@@ -2004,10 +2323,46 @@ static cell_t discord_DeleteGlobalCommand(IPluginContext* pContext, const cell_t
 
 	try {
 		dpp::snowflake command = std::stoull(commandId);
-		return discord->DeleteGlobalCommand(command) ? 1 : 0;
+		return discord->BulkDeleteGuildCommands(command) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid command ID format");
+		return 0;
+	}
+}
+
+static cell_t discord_BulkDeleteGuildCommands(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* guildId;
+	pContext->LocalToString(params[2], &guildId);
+
+	try {
+		dpp::snowflake guild = std::stoull(guildId);
+		return discord->BulkDeleteGuildCommands(guild) ? 1 : 0;
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid guild ID format");
+		return 0;
+	}
+}
+
+static cell_t discord_BulkDeleteGlobalCommands(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	try {
+		return discord->BulkDeleteGlobalCommands() ? 1 : 0;
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Unable to bulk delete global commands: %s", e.what());
 		return 0;
 	}
 }
@@ -2038,12 +2393,15 @@ const sp_nativeinfo_t discord_natives[] = {
   	{"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
 	{"Discord.DeleteGuildCommand", discord_DeleteGuildCommand},
   	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
+  	{"Discord.BulkDeleteGuildCommands", discord_BulkDeleteGuildCommands},
+  	{"Discord.BulkDeleteGlobalCommands", discord_BulkDeleteGlobalCommands},
 
 	// User
 	{"DiscordUser.GetId",    user_GetId},
 	{"DiscordUser.GetUsername",    user_GetUsername},
 	{"DiscordUser.GetDiscriminator",    user_GetDiscriminator},
 	{"DiscordUser.GetGlobalName",    user_GetGlobalName},
+	{"DiscordUser.GetAvatarUrl",       user_GetAvatarUrl},
 	{"DiscordUser.IsBot",    user_IsBot},
 
 	// Message
@@ -2100,7 +2458,21 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordInteraction.GetGuildId", interaction_GetGuildId},
 	{"DiscordInteraction.GetChannelId", interaction_GetChannelId},
 	{"DiscordInteraction.GetUser",       interaction_GetUser},
+	{"DiscordInteraction.GetUserNickname", interaction_GetUserNickname},
 	{"DiscordInteraction.GetUserId", interaction_GetUserId},
 	{"DiscordInteraction.GetUserName", interaction_GetUserName},
+
+	// Autocomplete
+	{"DiscordAutocompleteInteraction.GetCommandName", autocomplete_GetCommandName},
+	{"DiscordAutocompleteInteraction.GetGuildId", autocomplete_GetGuildId},
+	{"DiscordAutocompleteInteraction.GetChannelId", autocomplete_GetChannelId},
+	{"DiscordAutocompleteInteraction.GetUser",       autocomplete_GetUser},
+	{"DiscordAutocompleteInteraction.GetUserNickname", autocomplete_GetUserNickname},
+	{"DiscordAutocompleteInteraction.GetOptionValue", autocomplete_GetOptionValue},
+	{"DiscordAutocompleteInteraction.GetOptionValueInt", autocomplete_GetOptionValueInt},
+	{"DiscordAutocompleteInteraction.GetOptionValueFloat", autocomplete_GetOptionValueFloat},
+	{"DiscordAutocompleteInteraction.GetOptionValueBool", autocomplete_GetOptionValueBool},
+	{"DiscordAutocompleteInteraction.CreateAutocompleteResponse", autocomplete_CreateAutocompleteResponse},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoice", autocomplete_AddAutocompleteChoice},
 	{nullptr, nullptr}
 };

@@ -46,6 +46,8 @@ public:
 
 	const char* GetGlobalName() const { return m_user.global_name.c_str(); }
 
+	std::string GetAvatarUrl(bool prefer_animated_avatars) const { return m_user.get_avatar_url(0, dpp::i_png, prefer_animated_avatars); }
+
 	bool IsBot() const { return m_user.is_bot(); }
 };
 
@@ -65,7 +67,7 @@ public:
 	std::string GetAuthorId() const { return std::to_string(m_message.author.id); }
 	const char* GetAuthorName() const { return m_message.author.username.c_str(); }
 	const char* GetAuthorDisplayName() const { return m_message.author.global_name.c_str(); }
-	const char* GetAuthorNickname() const { return m_message.member.get_nickname().c_str(); }
+	std::string GetAuthorNickname() const { return m_message.member.get_nickname(); }
 	const uint16_t GetAuthorDiscriminator() const { return m_message.author.discriminator; }
 	bool IsPinned() const { return m_message.pinned; }
 	bool IsTTS() const { return m_message.tts; }
@@ -102,7 +104,7 @@ public:
 
 	void SetAvatarUrl(const char* value) { m_webhook.avatar_url = value; }
 
-	const char* GetAvatarData() const { return m_webhook.avatar.to_string().c_str(); }
+	std::string GetAvatarData() const { return m_webhook.avatar.to_string(); }
 
 	void SetAvatarData(const char* value) { m_webhook.avatar = dpp::utility::iconhash(value); }
 };
@@ -139,15 +141,18 @@ public:
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed);
 	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
 	bool GetChannelWebhooks(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
-    bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description);
-	bool RegisterGlobalSlashCommand(const char* name, const char* description);
-	bool RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const std::vector<dpp::command_option>& options);
-	bool RegisterGlobalSlashCommandWithOptions(const char* name, const char* description, const std::vector<dpp::command_option>& options);
+    bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions);
+	bool RegisterGlobalSlashCommand(const char* name, const char* description, const char* default_permissions);
+	bool RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permisssions, const std::vector<dpp::command_option>& options);
+	bool RegisterGlobalSlashCommandWithOptions(const char* name, const char* description, const char* default_permissions, const std::vector<dpp::command_option>& options);
+	void CreateAutocompleteResponse(dpp::snowflake id, const std::string &token, const dpp::interaction_response &response);
 	bool EditMessage(dpp::snowflake channel_id, dpp::snowflake message_id, const char* content);
 	bool EditMessageEmbed(dpp::snowflake channel_id, dpp::snowflake message_id, const char* content, const DiscordEmbed* embed);
 	bool DeleteMessage(dpp::snowflake channel_id, dpp::snowflake message_id);
 	bool DeleteGuildCommand(dpp::snowflake guild_id, dpp::snowflake command_id);
 	bool DeleteGlobalCommand(dpp::snowflake command_id);
+	bool BulkDeleteGuildCommands(dpp::snowflake guild_id);
+	bool BulkDeleteGlobalCommands();
 
 	const char* GetBotId() const { return m_botId.c_str(); }
 	const char* GetBotName() const { return m_botName.c_str(); }
@@ -183,6 +188,7 @@ public:
 	DiscordUser* GetUser() const { return new DiscordUser(m_interaction.command.usr); }
 	std::string GetUserId() const { return std::to_string(m_interaction.command.usr.id); }
 	const char* GetUserName() const { return m_interaction.command.usr.username.c_str(); }
+	std::string GetUserNickname() const { return m_interaction.command.member.get_nickname(); }
 
 	bool GetOptionValue(const char* name, std::string& value) const {
 		auto param = m_interaction.get_parameter(name);
@@ -247,6 +253,57 @@ public:
 		msg.set_flags(dpp::m_ephemeral);
 		msg.add_embed(embed->GetEmbed());
 		m_interaction.reply(msg);
+	}
+};
+
+class DiscordAutocompleteInteraction
+{
+public:
+	dpp::interaction_response m_response;
+	std::string m_commandName;
+	dpp::interaction m_command;
+	dpp::autocomplete_t m_autocomplete;
+
+	DiscordAutocompleteInteraction(const dpp::autocomplete_t& autocomplete) :
+		m_response(dpp::ir_autocomplete_reply),
+		m_commandName(autocomplete.command.get_command_name()),
+		m_command(autocomplete.command),
+		m_autocomplete(autocomplete)
+	{
+	}
+
+	const char* GetCommandName() const { return m_commandName.c_str(); }
+	std::string GetGuildId() const { return std::to_string(m_command.guild_id); }
+	std::string GetChannelId() const { return std::to_string(m_command.channel_id); }
+	DiscordUser* GetUser() const { return new DiscordUser(m_command.usr); }
+	std::string GetUserNickname() const { return m_command.member.get_nickname(); }
+
+	dpp::command_option GetOption(const char* name) const {
+		for (auto & opt : m_autocomplete.options) {
+			if (opt.name == name) return opt;
+		}
+
+		throw std::runtime_error("Option not found");
+	}
+
+	std::string GetOptionValue(const char* name) const {
+		return std::get<std::string>(GetOption(name).value);
+	}
+
+	int64_t GetOptionValueInt(const char* name) const {
+		return std::get<int64_t>(GetOption(name).value);
+	}
+
+	double GetOptionValueDouble(const char* name) const {
+		return std::get<double>(GetOption(name).value);
+	}
+
+	bool GetOptionValueBool(const char* name) const {
+		return std::get<bool>(GetOption(name).value);
+	}
+
+	void AddAutocompleteOption(dpp::command_option_choice choice) {
+		m_response.add_autocomplete_choice(choice);
 	}
 };
 
