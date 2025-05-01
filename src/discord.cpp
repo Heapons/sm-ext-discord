@@ -1888,6 +1888,23 @@ static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const
 	return 1;
 }
 
+static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* str_value;
+	pContext->LocalToString(params[4], &str_value);
+
+	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
+	return 1;
+}
+
 static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
@@ -2474,5 +2491,6 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordAutocompleteInteraction.GetOptionValueBool", autocomplete_GetOptionValueBool},
 	{"DiscordAutocompleteInteraction.CreateAutocompleteResponse", autocomplete_CreateAutocompleteResponse},
 	{"DiscordAutocompleteInteraction.AddAutocompleteChoice", autocomplete_AddAutocompleteChoice},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceString", autocomplete_AddAutocompleteChoiceString},
 	{nullptr, nullptr}
 };

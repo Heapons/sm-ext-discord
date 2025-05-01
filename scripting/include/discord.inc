@@ -892,6 +892,14 @@ methodmap DiscordAutocompleteInteraction < Handle
   public native void AddAutocompleteChoice(const char[] name, DiscordCommandOptionType type, any value);
 
   /**
+   * Adds a string-type choice to the autocomplete results that will be included in the response.
+   *
+   * @param name	  The name that will appear to the user for this autocomplete result
+   * @param value	  The actual value that will be used in the option when it is sent
+   */
+  public native void AddAutocompleteChoiceString(const char[] name, char[] value);
+
+  /**
    * Creates and sends the autocomplete response.
   */
   public native void CreateAutocompleteResponse(Discord discord);
