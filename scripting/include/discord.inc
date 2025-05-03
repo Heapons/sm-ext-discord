@@ -9,6 +9,7 @@
 #define MAX_DISCORD_NAME_LENGTH          33
 #define MAX_DISCORD_PRESENCE_LENGTH      129
 #define MAX_DISCORD_CHANNEL_NAME_LENGTH  101
+#define MAX_COMMAND_NAME                 33
 
 // Limits found here: https://discordjs.guide/popular-topics/embeds.html#notes
 #define DISCORD_TITLE_LENGTH  257
