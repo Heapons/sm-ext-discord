@@ -3,12 +3,24 @@
 #endif
 #define _discord_included_
 
-#define MAX_DISCORD_MESSAGE_LENGTH 2001
+#define MAX_DISCORD_MESSAGE_LENGTH       2001
 #define MAX_DISCORD_NITRO_MESSAGE_LENGTH 4001
-#define SNOWFLAKE_SIZE 20
-#define MAX_DISCORD_NAME_LENGTH 33
-#define MAX_DISCORD_PRESENCE_LENGTH 129
-#define MAX_DISCORD_CHANNEL_NAME_LENGTH 101
+#define SNOWFLAKE_SIZE                   20
+#define MAX_DISCORD_NAME_LENGTH          33
+#define MAX_DISCORD_PRESENCE_LENGTH      129
+#define MAX_DISCORD_CHANNEL_NAME_LENGTH  101
+
+// Limits found here: https://discordjs.guide/popular-topics/embeds.html#notes
+#define DISCORD_TITLE_LENGTH  257
+#define DISCORD_DESC_LENGTH   4097
+#define DISCORD_FIELD_LENGTH  1025
+#define DISCORD_FOOTER_LENGTH 2049
+#define DISCORD_EMBED_LENGTH  6001
+
+#define PARSE_USERS    (1<<0)
+#define PARSE_EVERYONE (1<<1)
+#define PARSE_ROLES    (1<<2)
+#define REPLIED_USER   (1<<3)
 
 // Command option types for slash commands
 enum DiscordCommandOptionType
@@ -145,7 +157,7 @@ methodmap Discord < Handle {
    * @param message   Message content to send
    * @return          true on success, false on failure
    */
-  public native bool ExecuteWebhook(DiscordWebhook wh, const char[] message);
+  public native bool ExecuteWebhook(DiscordWebhook wh, const char[] message, int allowedMentionsMask = 0, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
 
   /**
    * Creates a webhook for a channel
@@ -185,7 +197,7 @@ methodmap Discord < Handle {
    * @param message   Message content to send
    * @return          true on success, false on failure
    */
-  public native bool SendMessage(const char[] channelId, const char[] message);
+  public native bool SendMessage(const char[] channelId, const char[] message, int allowedMentionsMask = 0, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
 
   /**
    * Sends a message with embed to a specified channel
@@ -195,7 +207,7 @@ methodmap Discord < Handle {
    * @param embed     Embed object to send
    * @return          true on success, false on failure
    */
-  public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed);
+  public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed, int allowedMentionsMask = 0, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
 
   /**
    * Edits an existing message
@@ -897,7 +909,7 @@ methodmap DiscordAutocompleteInteraction < Handle
    * @param name	  The name that will appear to the user for this autocomplete result
    * @param value	  The actual value that will be used in the option when it is sent
    */
-  public native void AddAutocompleteChoiceString(const char[] name, char[] value);
+  public native void AddAutocompleteChoiceString(const char[] name, const char[] value);
 
   /**
    * Creates and sends the autocomplete response.

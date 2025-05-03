@@ -136,9 +136,9 @@ public:
 	void SetHandle(Handle_t handle) { m_discord_handle = handle; }
 	bool SetPresence(dpp::presence presence);
 	bool CreateWebhook(dpp::webhook wh, IForward *callback_forward, cell_t data);
-	bool ExecuteWebhook(dpp::webhook wh, const char* message);
-	bool SendMessage(dpp::snowflake channel_id, const char* message);
-	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed);
+	bool ExecuteWebhook(dpp::webhook wh, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
+	bool SendMessage(dpp::snowflake channel_id, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
+	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
 	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
 	bool GetChannelWebhooks(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
     bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions);
