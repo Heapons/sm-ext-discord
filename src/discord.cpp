@@ -687,14 +687,24 @@ static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* par
 		char* str;
 
 		pContext->LocalToString(users_array[i], &str);
-		users[i] = std::stoull(str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	for (int i = 0; i < roles.size(); i++) {
 		char* str;
 
 		pContext->LocalToString(roles_array[i], &str);
-		roles[i] = std::stoull(str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	try {
@@ -732,14 +742,24 @@ static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params
 		char* str;
 
 		pContext->LocalToString(users_array[i], &str);
-		users[i] = std::stoull(str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	for (int i = 0; i < roles.size(); i++) {
 		char* str;
 
 		pContext->LocalToString(roles_array[i], &str);
-		roles[i] = std::stoull(str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	try {
@@ -778,14 +798,24 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 		char* str;
 
 		pContext->LocalToString(users_array[i], &str);
-		users[i] = std::stoull(str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	for (int i = 0; i < roles.size(); i++) {
 		char* str;
 
 		pContext->LocalToString(roles_array[i], &str);
-		roles[i] = std::stoull(str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
 	}
 
 	HandleError err;
