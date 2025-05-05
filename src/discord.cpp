@@ -90,14 +90,22 @@ bool DiscordClient::SetPresence(dpp::presence presence)
 	}
 }
 
-bool DiscordClient::ExecuteWebhook(dpp::webhook wh, const char* message)
+void AddAllowedMentionsToMessage(dpp::message* msg, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles)
+{
+	msg->set_allowed_mentions(allowed_mentions_mask & 1, allowed_mentions_mask & 2, allowed_mentions_mask & 4, allowed_mentions_mask & 8, users, roles);
+}
+
+bool DiscordClient::ExecuteWebhook(dpp::webhook wh, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles)
 {
 	if (!m_isRunning) {
 		return false;
 	}
 
+	dpp::message message_obj(message);
+	AddAllowedMentionsToMessage(&message_obj, allowed_mentions_mask, users, roles);
+
 	try {
-		m_cluster->execute_webhook(wh, dpp::message(message));
+		m_cluster->execute_webhook(wh, message_obj);
 		return true;
 	}
 	catch (const std::exception& e) {
@@ -106,14 +114,17 @@ bool DiscordClient::ExecuteWebhook(dpp::webhook wh, const char* message)
 	}
 }
 
-bool DiscordClient::SendMessage(dpp::snowflake channel_id, const char* message)
+bool DiscordClient::SendMessage(dpp::snowflake channel_id, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles)
 {
 	if (!m_isRunning) {
 		return false;
 	}
 
+	dpp::message message_obj(channel_id, message);
+	AddAllowedMentionsToMessage(&message_obj, allowed_mentions_mask, users, roles);
+
 	try {
-		m_cluster->message_create(dpp::message(channel_id, message));
+		m_cluster->message_create(message_obj);
 		return true;
 	}
 	catch (const std::exception& e) {
@@ -122,16 +133,18 @@ bool DiscordClient::SendMessage(dpp::snowflake channel_id, const char* message)
 	}
 }
 
-bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed)
+bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles)
 {
 	if (!m_isRunning) {
 		return false;
 	}
 
+	dpp::message message_obj(channel_id, message);
+	AddAllowedMentionsToMessage(&message_obj, allowed_mentions_mask, users, roles);
+
 	try {
-		dpp::message msg(channel_id, message);
-		msg.add_embed(embed->GetEmbed());
-		m_cluster->message_create(msg);
+		message_obj.add_embed(embed->GetEmbed());
+		m_cluster->message_create(message_obj);
 		return true;
 	}
 	catch (const std::exception& e) {
@@ -661,8 +674,41 @@ static cell_t discord_ExecuteWebhook(IPluginContext* pContext, const cell_t* par
 	char* message;
 	pContext->LocalToString(params[3], &message);
 
+	cell_t* users_array;
+	cell_t* roles_array;
+
+	pContext->LocalToPhysAddr(params[5], &users_array);
+	pContext->LocalToPhysAddr(params[7], &roles_array);
+
+	std::vector<dpp::snowflake> users(params[6]);
+	std::vector<dpp::snowflake> roles(params[8]);
+
+	for (int i = 0; i < users.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(users_array[i], &str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
+	for (int i = 0; i < roles.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(roles_array[i], &str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
 	try {
-		return discord->ExecuteWebhook(webhook->m_webhook, message) ? 1 : 0;
+		return discord->ExecuteWebhook(webhook->m_webhook, message, params[4], users, roles) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Failed to execute webhook: %s", e.what());
@@ -683,9 +729,42 @@ static cell_t discord_SendMessage(IPluginContext* pContext, const cell_t* params
 	char* message;
 	pContext->LocalToString(params[3], &message);
 
+	cell_t* users_array;
+	cell_t* roles_array;
+
+	pContext->LocalToPhysAddr(params[5], &users_array);
+	pContext->LocalToPhysAddr(params[7], &roles_array);
+
+	std::vector<dpp::snowflake> users(params[6]);
+	std::vector<dpp::snowflake> roles(params[8]);
+
+	for (int i = 0; i < users.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(users_array[i], &str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
+	for (int i = 0; i < roles.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(roles_array[i], &str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
 	try {
 		dpp::snowflake channel = std::stoull(channelId);
-		return discord->SendMessage(channel, message) ? 1 : 0;
+		return discord->SendMessage(channel, message, params[4], users, roles) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid channel ID format: %s", channelId);
@@ -706,6 +785,39 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 	char* message;
 	pContext->LocalToString(params[3], &message);
 
+	cell_t* users_array;
+	cell_t* roles_array;
+
+	pContext->LocalToPhysAddr(params[6], &users_array);
+	pContext->LocalToPhysAddr(params[8], &roles_array);
+
+	std::vector<dpp::snowflake> users(params[7]);
+	std::vector<dpp::snowflake> roles(params[9]);
+
+	for (int i = 0; i < users.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(users_array[i], &str);
+		try {
+			users[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
+	for (int i = 0; i < roles.size(); i++) {
+		char* str;
+
+		pContext->LocalToString(roles_array[i], &str);
+		try {
+			roles[i] = std::stoull(str);
+		}
+		catch (const std::exception& e) {
+			continue; // Stub
+		}
+	}
+
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 
@@ -717,7 +829,7 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 
 	try {
 		dpp::snowflake channel = std::stoull(channelId);
-		return discord->SendMessageEmbed(channel, message, embed) ? 1 : 0;
+		return discord->SendMessageEmbed(channel, message, embed, params[5], users, roles) ? 1 : 0;
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid channel ID format: %s", channelId);
@@ -1888,6 +2000,23 @@ static cell_t autocomplete_AddAutocompleteChoice(IPluginContext* pContext, const
 	return 1;
 }
 
+static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
+	if (!interaction) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	char* str_value;
+	pContext->LocalToString(params[4], &str_value);
+
+	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
+	return 1;
+}
+
 static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordAutocompleteInteraction* interaction = GetAutocompleteInteractionPointer(pContext, params[1]);
@@ -2474,5 +2603,6 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordAutocompleteInteraction.GetOptionValueBool", autocomplete_GetOptionValueBool},
 	{"DiscordAutocompleteInteraction.CreateAutocompleteResponse", autocomplete_CreateAutocompleteResponse},
 	{"DiscordAutocompleteInteraction.AddAutocompleteChoice", autocomplete_AddAutocompleteChoice},
+	{"DiscordAutocompleteInteraction.AddAutocompleteChoiceString", autocomplete_AddAutocompleteChoiceString},
 	{nullptr, nullptr}
 };
