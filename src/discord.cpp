@@ -26,12 +26,10 @@ bool DiscordClient::Initialize()
 void DiscordClient::RunBot()
 {
 	try {
-		m_cluster->start(false);
+		m_cluster->start();
 	}
 	catch (const std::exception& e) {
-		g_TaskQueue.Push([this, error = std::string(e.what())]() {
-			smutils->LogError(myself, "Failed to run Discord bot: %s", error.c_str());
-			});
+		smutils->LogError(myself, "Failed to run Discord bot: %s", e.what());
 	}
 }
 
@@ -256,7 +254,7 @@ bool DiscordClient::CreateWebhook(dpp::webhook wh, IForward *callback_forward, c
 				handlesys->FreeHandle(webhookHandle, &sec);
 
 				forwards->ReleaseForward(forward);
-            });
+						});
 		});
 		return true;
 	}
@@ -306,7 +304,7 @@ bool DiscordClient::GetChannel(dpp::snowflake channel_id, IForward *callback_for
 				handlesys->FreeHandle(channelHandle, &sec);
 
 				forwards->ReleaseForward(forward);
-            });
+						});
 		});
 		return true;
 	}
@@ -359,14 +357,15 @@ void DiscordClient::SetupEventHandlers()
 		});
 
 	m_cluster->on_log([this](const dpp::log_t& event) {
-		g_TaskQueue.Push([this, message = event.message]() {
+		if (event.severity >= dpp::ll_error) {
+			g_TaskQueue.Push([this, message = event.message]() {
 			if (g_pForwardError && g_pForwardError->GetFunctionCount()) {
 				g_pForwardError->PushCell(m_discord_handle);
 				g_pForwardError->PushString(message.c_str());
 				g_pForwardError->Execute(nullptr);
 			}
 			});
-		});
+		}});
 
 	m_cluster->on_slashcommand([this](const dpp::slashcommand_t& event) {
 		g_TaskQueue.Push([this, event]() {
@@ -423,7 +422,7 @@ void DiscordClient::SetupEventHandlers()
 						g_pForwardAutocomplete->PushString(opt.name.c_str());
 						g_pForwardAutocomplete->Execute(nullptr);
 					}
-	        	}
+						}
 
 				handlesys->FreeHandle(interactionHandle, &sec);
 			}
@@ -587,7 +586,7 @@ static cell_t discord_SetPresence(IPluginContext* pContext, const cell_t* params
 	pContext->LocalToString(params[4], &status_text);
 
 	try {
-        dpp::presence presence(static_cast<dpp::presence_status>(params[2]), static_cast<dpp::activity_type>(params[3]), status_text);
+				dpp::presence presence(static_cast<dpp::presence_status>(params[2]), static_cast<dpp::activity_type>(params[3]), status_text);
 		return discord->SetPresence(presence);
 	}
 	catch (const std::exception& e) {
@@ -1160,6 +1159,16 @@ static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t message_GetContentLength(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) {
+		return 0;
+	}
+
+	return message->GetContentLength();
+}
+
 static cell_t message_GetMessageId(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
@@ -1316,7 +1325,7 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 	dpp::webhook webhook;
 	try
 	{
-    	webhook = dpp::webhook(webhook_url);
+			webhook = dpp::webhook(webhook_url);
 	}
 	catch (const std::exception& e)
 	{
@@ -2519,11 +2528,11 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.EditMessageEmbed", discord_EditMessageEmbed},
 	{"Discord.DeleteMessage", discord_DeleteMessage},
 	{"Discord.RegisterSlashCommandWithOptions", discord_RegisterSlashCommandWithOptions},
-  	{"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
+	{"Discord.RegisterGlobalSlashCommandWithOptions", discord_RegisterGlobalSlashCommandWithOptions},
 	{"Discord.DeleteGuildCommand", discord_DeleteGuildCommand},
-  	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
-  	{"Discord.BulkDeleteGuildCommands", discord_BulkDeleteGuildCommands},
-  	{"Discord.BulkDeleteGlobalCommands", discord_BulkDeleteGlobalCommands},
+	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
+	{"Discord.BulkDeleteGuildCommands", discord_BulkDeleteGuildCommands},
+	{"Discord.BulkDeleteGlobalCommands", discord_BulkDeleteGlobalCommands},
 
 	// User
 	{"DiscordUser.GetId",    user_GetId},
@@ -2535,10 +2544,11 @@ const sp_nativeinfo_t discord_natives[] = {
 
 	// Message
 	{"DiscordMessage.GetContent",    message_GetContent},
+	{"DiscordMessage.ContentLength.get", message_GetContentLength},
 	{"DiscordMessage.GetMessageId",  message_GetMessageId},
 	{"DiscordMessage.GetChannelId",  message_GetChannelId},
 	{"DiscordMessage.GetGuildId",    message_GetGuildId},
-	{"DiscordMessage.GetAuthor",       message_GetAuthor},
+	{"DiscordMessage.GetAuthor",     message_GetAuthor},
 	{"DiscordMessage.GetAuthorId",   message_GetAuthorId},
 	{"DiscordMessage.GetAuthorName", message_GetAuthorName},
 	{"DiscordMessage.GetAuthorDisplayName", message_GetAuthorDisplayName},
@@ -2546,7 +2556,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.GetAuthorDiscriminator", message_GetAuthorDiscriminator},
 	{"DiscordMessage.IsBot",         message_IsBot},
 
-    // Channel
+	// Channel
 	{"DiscordChannel.GetName",       channel_GetName},
 
 	// Webhook

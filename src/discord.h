@@ -61,6 +61,7 @@ public:
 
 	DiscordUser* GetAuthor() const { return new DiscordUser(m_message.author); }
 	const char* GetContent() const { return m_message.content.c_str(); }
+	const size_t GetContentLength() const { return m_message.content.length(); }
 	std::string GetMessageId() const { return std::to_string(m_message.id); }
 	std::string GetChannelId() const { return std::to_string(m_message.channel_id); }
 	std::string GetGuildId() const { return std::to_string(m_message.guild_id); }
@@ -141,7 +142,7 @@ public:
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
 	bool GetChannel(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
 	bool GetChannelWebhooks(dpp::snowflake channel_id, IForward *callback_forward, cell_t data);
-    bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions);
+	bool RegisterSlashCommand(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permissions);
 	bool RegisterGlobalSlashCommand(const char* name, const char* description, const char* default_permissions);
 	bool RegisterSlashCommandWithOptions(dpp::snowflake guild_id, const char* name, const char* description, const char* default_permisssions, const std::vector<dpp::command_option>& options);
 	bool RegisterGlobalSlashCommandWithOptions(const char* name, const char* description, const char* default_permissions, const std::vector<dpp::command_option>& options);

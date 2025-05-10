@@ -510,6 +510,16 @@ methodmap DiscordMessage < Handle
    * @return          true if author is bot, false otherwise
    */
   public native bool IsBot();
+
+  /**
+   * Gets number of characters in the content
+   * @note            not including any null-termination
+   * 
+   * @return          Length of the message content
+   */
+  property int ContentLength {
+    public native get();
+  }
 }
 
 /**
@@ -898,17 +908,17 @@ methodmap DiscordAutocompleteInteraction < Handle
   /**
    * Adds a choice to the autocomplete results that will be included in the response.
    *
-   * @param name	  The name that will appear to the user for this autocomplete result
-   * @param type	  The option type of the value to be passed
-   * @param value	  The actual value that will be used in the option when it is sent
+   * @param name   	The name that will appear to the user for this autocomplete result
+   * @param type    The option type of the value to be passed
+   * @param value   The actual value that will be used in the option when it is sent
    */
   public native void AddAutocompleteChoice(const char[] name, DiscordCommandOptionType type, any value);
 
   /**
    * Adds a string-type choice to the autocomplete results that will be included in the response.
    *
-   * @param name	  The name that will appear to the user for this autocomplete result
-   * @param value	  The actual value that will be used in the option when it is sent
+   * @param name    The name that will appear to the user for this autocomplete result
+   * @param value   The actual value that will be used in the option when it is sent
    */
   public native void AddAutocompleteChoiceString(const char[] name, const char[] value);
 

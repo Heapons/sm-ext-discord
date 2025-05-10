@@ -56,8 +56,13 @@ void ready::handle(discord_client* client, json &j, const std::string &raw) {
 		client->resume_gateway_url = ugly;
 	}
 	/* Pre-resolve it into our cache so that we aren't waiting on this when we need it later */
-	static_cast<void>(resolve_hostname(client->resume_gateway_url, "443"));
-	client->log(ll_debug, "Resume URL for session " + client->sessionid + " is " + ugly + " (host: " + client->resume_gateway_url + ")");
+	try {
+		static_cast<void>(resolve_hostname(client->resume_gateway_url, "443"));
+		client->log(ll_debug, "Resume URL for session " + client->sessionid + " is " + ugly + " (host: " + client->resume_gateway_url + ")");
+	}
+	catch (std::exception& e) {
+		client->log(ll_warning, "Resume URL " + client->resume_gateway_url + " does not resolve: " + std::string(e.what()));
+	}
 
 	client->ready = true;
 
@@ -68,14 +73,16 @@ void ready::handle(discord_client* client, json &j, const std::string &raw) {
 	}
 
 	if (!client->creator->on_ready.empty()) {
-		dpp::ready_t r(client, raw);
+		dpp::ready_t r(client->owner, client->shard_id, raw);
 		r.session_id = client->sessionid;
 		r.shard_id = client->shard_id;
 		for (const auto& guild : j["d"]["guilds"]) {
 			r.guilds.emplace_back(snowflake_not_null(&guild, "id"));
 		}
 		r.guild_count = r.guilds.size();
-		client->creator->on_ready.call(r);
+		client->creator->queue_work(1, [c = client->creator, r]() {
+			c->on_ready.call(r);
+		});
 	}
 }
 
