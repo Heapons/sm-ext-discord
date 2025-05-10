@@ -83,6 +83,7 @@ for cxx in builder.targets:
     'signature_verifier.cpp',
     'http_server_request.cpp',
     'discordclient.cpp',
+		'discordvoiceclient.cpp',
     'socket.cpp',
     'sslconnection.cpp',
     'discord_webhook_server.cpp',
@@ -156,6 +157,7 @@ for cxx in builder.targets:
     'events/voice_state_update.cpp',
     'voiceregion.cpp',
     'voicestate.cpp',
+		'voice/stub/stubs.cpp',
     'scheduled_event.cpp',
 		# coroutines require C++20 - currently not enabling this feature
 		#'cluster_coro_calls.cpp',

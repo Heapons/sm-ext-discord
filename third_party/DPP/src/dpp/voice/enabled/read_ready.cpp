@@ -68,7 +68,7 @@ void discord_voice_client::read_ready()
 
 	voice_payload vp{0, // seq, populate later
 	                 0, // timestamp, populate later
-	                 std::make_unique<voice_receive_t>(nullptr, std::string(reinterpret_cast<char*>(buffer), packet_size))};
+	                 std::make_unique<voice_receive_t>(owner, 0, std::string(reinterpret_cast<char*>(buffer), packet_size))};
 
 	vp.vr->voice_client = this;
 
@@ -126,9 +126,7 @@ void discord_voice_client::read_ready()
 
 	if (!voice_courier.joinable()) {
 		/* Courier thread is not running, start it */
-		voice_courier = std::thread(&voice_courier_loop,
-		                            std::ref(*this),
-		                            std::ref(voice_courier_shared_state));
+		voice_courier = std::thread(&voice_courier_loop, std::ref(*this), std::ref(voice_courier_shared_state));
 	}
 }
 
