@@ -4,6 +4,8 @@ import os
 if builder.host.platform == 'linux':
   dpp = builder.Build('third_party/DPP/src/dpp/AMBuilder')
 
+libz = builder.Build('third_party/zlib/AMBuilder')
+
 for cxx in builder.targets:
   binary = Extension.Library(builder, cxx, 'discord.ext')
   arch = binary.compiler.target.arch
@@ -16,12 +18,12 @@ for cxx in builder.targets:
 
   binary.compiler.includes += [
     os.path.join(builder.sourcePath, 'src'),
+    os.path.join(builder.sourcePath, 'third_party', 'zlib'),
     os.path.join(builder.sourcePath, 'third_party', 'DPP', 'include'),
   ]
 
   if binary.compiler.target.platform == 'linux':
     binary.compiler.postlink += [
-      '-lz',
       '-lssl',
       dpp[arch].binary,
     ]
@@ -29,5 +31,9 @@ for cxx in builder.targets:
     binary.compiler.postlink += [
       os.path.join(builder.sourcePath, 'third_party', 'DPP', 'lib', 'dpp_{}.lib'.format(arch)),
 		]
+    
+  binary.compiler.postlink += [
+    libz[arch].binary,
+  ]
 
   Extension.extensions += [builder.Add(binary)]

@@ -31,9 +31,15 @@
 
 namespace dpp {
 
-event_dispatch_t::event_dispatch_t(discord_client* client, const std::string& raw) : raw_event(raw), from(client) {}
+thread_local std::string queued_response;
 
-event_dispatch_t::event_dispatch_t(discord_client* client, std::string&& raw) : raw_event(std::move(raw)), from(client) {}
+event_dispatch_t::event_dispatch_t(dpp::cluster* creator, uint32_t shard_id, const std::string& raw) : raw_event(raw), shard(shard_id), owner(creator) {}
+
+event_dispatch_t::event_dispatch_t(dpp::cluster* creator, uint32_t shard_id, std::string&& raw) : raw_event(std::move(raw)), shard(shard_id), owner(creator) {}
+
+discord_client* event_dispatch_t::from() const {
+	return owner->get_shard(shard);
+}
 
 const event_dispatch_t& event_dispatch_t::cancel_event() const {
 	cancelled = true;
@@ -73,12 +79,12 @@ void message_create_t::send(const std::string& m, command_completion_event_t cal
 }
 
 void message_create_t::send(const message& msg, command_completion_event_t callback) const {
-	this->from->creator->message_create(std::move(message{msg}.set_channel_id(this->msg.channel_id)), std::move(callback));
+	owner->message_create(std::move(message{msg}.set_channel_id(this->msg.channel_id)), std::move(callback));
 }
 
 void message_create_t::send(message&& msg, command_completion_event_t callback) const {
 	msg.channel_id = this->msg.channel_id;
-	this->from->creator->message_create(std::move(msg), std::move(callback));
+	owner->message_create(std::move(msg), std::move(callback));
 }
 
 void message_create_t::reply(const std::string& m, bool mention_replied_user, command_completion_event_t callback) const {
@@ -94,7 +100,7 @@ void message_create_t::reply(const message& msg, bool mention_replied_user, comm
 		msg_to_send.allowed_mentions.replied_user = mention_replied_user;
 		msg_to_send.allowed_mentions.users.push_back(this->msg.author.id);
 	}
-	this->from->creator->message_create(std::move(msg_to_send), std::move(callback));
+	owner->message_create(std::move(msg_to_send), std::move(callback));
 }
 
 void message_create_t::reply(message&& msg, bool mention_replied_user, command_completion_event_t callback) const {
@@ -104,20 +110,69 @@ void message_create_t::reply(message&& msg, bool mention_replied_user, command_c
 		msg.allowed_mentions.replied_user = mention_replied_user;
 		msg.allowed_mentions.users.push_back(this->msg.author.id);
 	}
-	this->from->creator->message_create(std::move(msg), std::move(callback));
+	owner->message_create(std::move(msg), std::move(callback));
+}
+
+#ifndef DPP_NO_CORO
+async<confirmation_callback_t> message_create_t::co_send(const std::string& m) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->send(m, std::forward<T>(cb)); }};
+}
+
+async<confirmation_callback_t> message_create_t::co_send(const message& msg) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->send(msg, std::forward<T>(cb)); }};
+}
+
+async<confirmation_callback_t> message_create_t::co_send(message&& msg) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->send(std::move(msg), std::forward<T>(cb)); }};
+}
+
+async<confirmation_callback_t> message_create_t::co_reply(const std::string& m, bool mention_replied_user) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->reply(m, mention_replied_user, std::forward<T>(cb)); }};
+}
+
+async<confirmation_callback_t> message_create_t::co_reply(const message& msg, bool mention_replied_user) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->reply(msg, mention_replied_user, std::forward<T>(cb)); }};
+}
+
+async<confirmation_callback_t> message_create_t::co_reply(message&& msg, bool mention_replied_user) const {
+	return dpp::async{[&, this] <typename T> (T&& cb) { this->reply(std::move(msg), mention_replied_user, std::forward<T>(cb)); }};
+}
+#endif /* DPP_NO_CORO */
+
+confirmation_callback_t interaction_create_t::success() const {
+	http_request_completion_t http;
+	http.status = 201;
+	http.error = h_success;
+	return confirmation_callback_t(owner, confirmation(), http);
 }
 
 void interaction_create_t::reply(interaction_response_type t, const message& m, command_completion_event_t callback) const {
-	from->creator->interaction_response_create(this->command.id, this->command.token, dpp::interaction_response(t, m), std::move(callback));
+	if (from_webhook) {
+		set_queued_response(dpp::interaction_response(t, m).build_json());
+		if (callback) {
+			/* This always succeeds, because we don't have to perform an API call */
+			callback(success());
+		}
+	} else {
+		owner->interaction_response_create(this->command.id, this->command.token, dpp::interaction_response(t, m), std::move(callback));
+	}
 }
 
 void interaction_create_t::reply(const message& m, command_completion_event_t callback) const {
-	from->creator->interaction_response_create(
-		this->command.id,
-		this->command.token,
-		dpp::interaction_response(ir_channel_message_with_source, m),
-		std::move(callback)
-	);
+	if (from_webhook) {
+                set_queued_response(dpp::interaction_response(ir_channel_message_with_source, m).build_json());
+		if (callback) {
+			/* This always succeeds, because we don't have to perform an API call */
+			callback(success());
+		}
+	} else {
+		owner->interaction_response_create(
+			this->command.id,
+			this->command.token,
+			dpp::interaction_response(ir_channel_message_with_source, m),
+			std::move(callback)
+		);
+	}
 }
 
 void interaction_create_t::thinking(bool ephemeral, command_completion_event_t callback) const {
@@ -129,12 +184,28 @@ void interaction_create_t::thinking(bool ephemeral, command_completion_event_t c
 	this->reply(ir_deferred_channel_message_with_source, std::move(msg), std::move(callback));
 }
 
+void interaction_create_t::set_queued_response(const std::string& response) const {
+	queued_response = response;
+}
+
+std::string interaction_create_t::get_queued_response() const {
+	return queued_response;
+}
+
 void interaction_create_t::reply(command_completion_event_t callback) const {
 	this->reply(ir_deferred_update_message, message{}, std::move(callback));
 }
 
 void interaction_create_t::dialog(const interaction_modal_response& mr, command_completion_event_t callback) const {
-	from->creator->interaction_response_create(this->command.id, this->command.token, mr, std::move(callback));
+	if (from_webhook) {
+                set_queued_response(mr.build_json());
+		if (callback) {
+			/* This always succeeds, because we don't have to perform an API call */
+			callback(success());
+		}
+	} else {
+		owner->interaction_response_create(this->command.id, this->command.token, mr, std::move(callback));
+	}
 }
 
 void interaction_create_t::reply(interaction_response_type t, const std::string& mt, command_completion_event_t callback) const {
@@ -146,7 +217,7 @@ void interaction_create_t::reply(const std::string& mt, command_completion_event
 }
 
 void interaction_create_t::edit_response(const message& m, command_completion_event_t callback) const {
-	from->creator->interaction_response_edit(this->command.token, m, std::move(callback));
+	owner->interaction_response_edit(this->command.token, m, std::move(callback));
 }
 
 void interaction_create_t::edit_response(const std::string& mt, command_completion_event_t callback) const {
@@ -154,9 +225,9 @@ void interaction_create_t::edit_response(const std::string& mt, command_completi
 }
 
 void interaction_create_t::get_original_response(command_completion_event_t callback) const {
-	from->creator->post_rest(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_get, "", [creator = this->from->creator, cb = std::move(callback)](json& j, const http_request_completion_t& http) {
+	owner->post_rest(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_get, "", [owner = this->owner, cb = std::move(callback)](json& j, const http_request_completion_t& http) {
 		if (cb) {
-			cb(confirmation_callback_t(creator, message().fill_from_json(&j), http));
+			cb(confirmation_callback_t(owner, message().fill_from_json(&j), http));
 		}
 	});
 }
@@ -172,23 +243,23 @@ void interaction_create_t::edit_original_response(const message& m, command_comp
 		file_mimetypes.push_back(data.mimetype);
 	}
 
-	from->creator->post_rest_multipart(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_patch, m.build_json(), [creator = this->from->creator, cb = std::move(callback)](json& j, const http_request_completion_t& http) {
+	owner->post_rest_multipart(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_patch, m.build_json(), [owner = this->owner, cb = std::move(callback)](json& j, const http_request_completion_t& http) {
 		if (cb) {
-			cb(confirmation_callback_t(creator, message().fill_from_json(&j), http));
+			cb(confirmation_callback_t(owner, message().fill_from_json(&j), http));
 		}
 	}, m.file_data);
 }
 
 void interaction_create_t::delete_original_response(command_completion_event_t callback) const {
-	from->creator->post_rest(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_delete, "", [creator = this->from->creator, cb = std::move(callback)](const json &, const http_request_completion_t& http) {
+	owner->post_rest(API_PATH "/webhooks", std::to_string(command.application_id), command.token + "/messages/@original", m_delete, "", [owner = this->owner, cb = std::move(callback)](const json &, const http_request_completion_t& http) {
 		if (cb) {
-			cb(confirmation_callback_t(creator, confirmation(), http));
+			cb(confirmation_callback_t(owner, confirmation(), http));
 		}
 	});
 }
 
 
-#ifdef DPP_CORO
+#ifndef DPP_NO_CORO
 async<confirmation_callback_t> interaction_create_t::co_reply() const {
 	return dpp::async{[this] <typename T> (T&& cb) { this->reply(std::forward<T>(cb)); }};
 }
@@ -236,7 +307,7 @@ async<confirmation_callback_t> interaction_create_t::co_edit_original_response(c
 async<confirmation_callback_t> interaction_create_t::co_delete_original_response() const {
 	return dpp::async{[&, this] <typename T> (T&& cb) { this->delete_original_response(std::forward<T>(cb)); }};
 }
-#endif /* DPP_CORO */
+#endif /* DPP_NO_CORO */
 
 command_value interaction_create_t::get_parameter(const std::string& name) const {
 	const command_interaction ci = command.get_command_interaction();
@@ -267,11 +338,11 @@ command_value interaction_create_t::get_parameter(const std::string& name) const
 	return {};
 }
 
-voice_receive_t::voice_receive_t(discord_client* client, const std::string& raw, discord_voice_client* vc, snowflake _user_id, const uint8_t* pcm, size_t length) : event_dispatch_t(client, raw), voice_client(vc), user_id(_user_id) {
+voice_receive_t::voice_receive_t(dpp::cluster* creator, uint32_t shard_id, const std::string& raw, discord_voice_client* vc, snowflake _user_id, const uint8_t* pcm, size_t length) : event_dispatch_t(creator, shard_id, std::move(raw)), voice_client(vc), user_id(_user_id) {
 	reassign(vc, _user_id, pcm, length);
 }
 
-voice_receive_t::voice_receive_t(discord_client* client, std::string&& raw, discord_voice_client* vc, snowflake _user_id, const uint8_t* pcm, size_t length) : event_dispatch_t(client, std::move(raw)), voice_client(vc), user_id(_user_id) {
+voice_receive_t::voice_receive_t(dpp::cluster* creator, uint32_t shard_id, std::string&& raw, discord_voice_client* vc, snowflake _user_id, const uint8_t* pcm, size_t length) : event_dispatch_t(creator, shard_id, std::move(raw)), voice_client(vc), user_id(_user_id) {
 	reassign(vc, _user_id, pcm, length);
 }
 

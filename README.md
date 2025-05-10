@@ -18,10 +18,10 @@ A [SourceMod](http://www.sourcemod.net/) extension that provides Discord bot int
   - `opus.dll`
   - `zlib1.dll`
 
-These files can be found in the `bin` folder of the [release package](https://github.com/brainboxdotcc/DPP/releases/tag/v10.0.35). Please download the appropriate version for your platform (x86 or x64).
+These files can be found in the `bin` folder of the [release package](https://github.com/brainboxdotcc/DPP/releases/tag/v10.1.2). Please download the appropriate version for your platform (x86 or x64).
 
 Steps for Windows users:
-1. Download the Windows release package from the [D++ releases page](https://github.com/brainboxdotcc/DPP/releases/tag/v10.0.35)
+1. Download the Windows release package from the [D++ releases page](https://github.com/brainboxdotcc/DPP/releases/tag/v10.1.2)
 2. Extract the package
 3. Copy all required DLL files from the `bin` folder to your servers directory
 4. Make sure the DLL files match your server's architecture (x86 or x64)
