@@ -13,7 +13,7 @@ for cxx in builder.targets:
 
   binary.compiler.defines += [
   ]
-
+  
   # from DPP CMakeLists.txt
   binary.sources += [
     'socketengines/epoll.cpp',
@@ -157,10 +157,10 @@ for cxx in builder.targets:
     'events/voice_state_update.cpp',
     'voiceregion.cpp',
     'voicestate.cpp',
-		'voice/stub/stubs.cpp',
+    'voice/stub/stubs.cpp',
     'scheduled_event.cpp',
-		# coroutines require C++20 - currently not enabling this feature
-		#'cluster_coro_calls.cpp',
+    # coroutines require C++20 - currently not enabling this feature
+    #'cluster_coro_calls.cpp',
   ]
 
   rvalue[binary.compiler.target.arch] = builder.Add(binary)
