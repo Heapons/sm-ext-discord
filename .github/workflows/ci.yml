@@ -6,12 +6,10 @@ on:
     branches:
       - "main"
     paths:
-      - "scripting/**"
       - "src/**"
       - "third_party/**"
   pull_request:
     paths:
-      - "scripting/**"
       - "src/**"
       - "third_party/**"
 

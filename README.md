@@ -42,7 +42,6 @@ A [SourceMod](http://www.sourcemod.net/) extension that provides Discord bot int
   - `libcrypto-1_1.dll`
   - `libssl-1_1.dll`
   - `opus.dll`
-  - `zlib1.dll`
 
 These files can be found in the `bin` folder of the [release package](https://github.com/brainboxdotcc/DPP/releases/tag/v10.1.3). Please download the appropriate version for your platform (x86 or x64).
 

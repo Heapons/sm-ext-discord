@@ -6,17 +6,17 @@ DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
 
 HandleType_t
-  g_DiscordHandle,
-  g_DiscordUserHandle,
-  g_DiscordMessageHandle,
-  g_DiscordChannelHandle,
-  g_DiscordWebhookHandle,
-  g_DiscordEmbedHandle,
-  g_DiscordInteractionHandle,
-  g_DiscordAutocompleteInteractionHandle,
-  g_DiscordSlashCommandHandle,
-  g_DiscordForumTagHandle,
-  g_DiscordGuildHandle;
+	g_DiscordHandle,
+	g_DiscordUserHandle,
+	g_DiscordMessageHandle,
+	g_DiscordChannelHandle,
+	g_DiscordWebhookHandle,
+	g_DiscordEmbedHandle,
+	g_DiscordInteractionHandle,
+	g_DiscordAutocompleteInteractionHandle,
+	g_DiscordSlashCommandHandle,
+	g_DiscordForumTagHandle,
+	g_DiscordGuildHandle;
 
 DiscordHandler g_DiscordHandler;
 DiscordUserHandler g_DiscordUserHandler;
@@ -74,7 +74,7 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	g_pForwardSlashCommand = forwards->CreateForward("Discord_OnSlashCommand", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
 	g_pForwardAutocomplete = forwards->CreateForward("Discord_OnAutocomplete", ET_Ignore, 5, nullptr, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 
-  smutils->AddGameFrameHook(&OnGameFrame);
+	smutils->AddGameFrameHook(&OnGameFrame);
 
 	return true;
 }
@@ -100,7 +100,7 @@ void DiscordExtension::SDK_OnUnload()
 	handlesys->RemoveType(g_DiscordForumTagHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordGuildHandle, myself->GetIdentity());
 
-  smutils->RemoveGameFrameHook(&OnGameFrame);
+	smutils->RemoveGameFrameHook(&OnGameFrame);
 }
 
 void DiscordHandler::OnHandleDestroy(HandleType_t type, void* object)

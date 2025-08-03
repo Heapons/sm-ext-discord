@@ -26,143 +26,144 @@
 // Discord permissions enum
 enum DiscordPermission
 {
-  Permission_CreateInstantInvite = 0,     // "1"
-  Permission_KickMembers = 1,             // "2"
-  Permission_BanMembers = 2,              // "4"
-  Permission_Administrator = 3,           // "8"
-  Permission_ManageChannels = 4,          // "16"
-  Permission_ManageGuild = 5,             // "32"
-  Permission_AddReactions = 6,            // "64"
-  Permission_ViewAuditLog = 7,            // "128"
-  Permission_PrioritySpeaker = 8,         // "256"
-  Permission_Stream = 9,                  // "512"
-  Permission_ViewChannel = 10,            // "1024"
-  Permission_SendMessages = 11,           // "2048"
-  Permission_SendTTSMessages = 12,        // "4096"
-  Permission_ManageMessages = 13,         // "8192"
-  Permission_EmbedLinks = 14,             // "16384"
-  Permission_AttachFiles = 15,            // "32768"
-  Permission_ReadMessageHistory = 16,     // "65536"
-  Permission_MentionEveryone = 17,        // "131072"
-  Permission_UseExternalEmojis = 18,      // "262144"
-  Permission_ViewGuildInsights = 19,      // "524288"
-  Permission_Connect = 20,                // "1048576"
-  Permission_Speak = 21,                  // "2097152"
-  Permission_MuteMembers = 22,            // "4194304"
-  Permission_DeafenMembers = 23,          // "8388608"
-  Permission_MoveMembers = 24,            // "16777216"
-  Permission_UseVAD = 25,                 // "33554432"
-  Permission_ChangeNickname = 26,         // "67108864"
-  Permission_ManageNicknames = 27,        // "134217728"
-  Permission_ManageRoles = 28,            // "268435456"
-  Permission_ManageWebhooks = 29,         // "536870912"
-  Permission_ManageEmojis = 30,           // "1073741824"
-  Permission_UseSlashCommands = 31,       // "2147483648"
-  Permission_RequestToSpeak = 32,         // "4294967296"
-  Permission_ManageEvents = 33,           // "8589934592"
-  Permission_ManageThreads = 34,          // "17179869184"
-  Permission_CreatePublicThreads = 35,    // "34359738368"
-  Permission_CreatePrivateThreads = 36,   // "68719476736"
-  Permission_UseExternalStickers = 37,    // "137438953472"
-  Permission_SendMessagesInThreads = 38,  // "274877906944"
-  Permission_UseEmbeddedActivities = 39,  // "549755813888"
-  Permission_ModerateMembers = 40,        // "1099511627776"
-  Permission_ViewCreatorMonetizationAnalytics = 41, // "2199023255552"
-  Permission_UseSoundboard = 42,          // "4398046511104"
-  Permission_CreateGuildExpressions = 43, // "8796093022208"
-  Permission_CreateEvents = 44,           // "17592186044416"
-  Permission_UseExternalSounds = 45,      // "35184372088832"
-  Permission_SendVoiceMessages = 46       // "70368744177664"
+  Permission_CreateInstantInvite = 0,               // Allows creation of instant invites
+  Permission_KickMembers = 1,                       // Allows kicking members from the guild
+  Permission_BanMembers = 2,                        // Allows banning members from the guild
+  Permission_Administrator = 3,                     // Administrator permissions (all permissions)
+  Permission_ManageChannels = 4,                    // Allows management and editing of channels
+  Permission_ManageGuild = 5,                       // Allows management and editing of the guild
+  Permission_AddReactions = 6,                      // Allows adding reactions to messages
+  Permission_ViewAuditLog = 7,                      // Allows viewing audit logs
+  Permission_PrioritySpeaker = 8,                   // Allows using priority speaker in voice channels
+  Permission_Stream = 9,                            // Allows the user to go live
+  Permission_ViewChannel = 10,                      // Allows viewing channels (read messages/join voice)
+  Permission_SendMessages = 11,                     // Allows sending messages in channels
+  Permission_SendTTSMessages = 12,                  // Allows sending text-to-speech messages
+  Permission_ManageMessages = 13,                   // Allows deleting other users' messages
+  Permission_EmbedLinks = 14,                       // Allows links to be auto-embedded
+  Permission_AttachFiles = 15,                      // Allows uploading files and images
+  Permission_ReadMessageHistory = 16,               // Allows reading message history
+  Permission_MentionEveryone = 17,                  // Allows using @everyone and @here mentions
+  Permission_UseExternalEmojis = 18,                // Allows using emojis from other servers
+  Permission_ViewGuildInsights = 19,                // Allows viewing guild insights
+  Permission_Connect = 20,                          // Allows joining voice channels
+  Permission_Speak = 21,                            // Allows speaking in voice channels
+  Permission_MuteMembers = 22,                      // Allows muting members in voice channels
+  Permission_DeafenMembers = 23,                    // Allows deafening members in voice channels
+  Permission_MoveMembers = 24,                      // Allows moving members between voice channels
+  Permission_UseVAD = 25,                           // Allows using voice activity detection
+  Permission_ChangeNickname = 26,                   // Allows changing own nickname
+  Permission_ManageNicknames = 27,                  // Allows managing others' nicknames
+  Permission_ManageRoles = 28,                      // Allows managing roles
+  Permission_ManageWebhooks = 29,                   // Allows managing webhooks
+  Permission_ManageEmojis = 30,                     // Allows managing emojis and stickers
+  Permission_UseSlashCommands = 31,                 // Allows using slash commands
+  Permission_RequestToSpeak = 32,                   // Allows requesting to speak in stage channels
+  Permission_ManageEvents = 33,                     // Allows managing scheduled events
+  Permission_ManageThreads = 34,                    // Allows managing threads
+  Permission_CreatePublicThreads = 35,              // Allows creating public threads
+  Permission_CreatePrivateThreads = 36,             // Allows creating private threads
+  Permission_UseExternalStickers = 37,              // Allows using stickers from other servers
+  Permission_SendMessagesInThreads = 38,            // Allows sending messages in threads
+  Permission_UseEmbeddedActivities = 39,            // Allows using embedded activities
+  Permission_ModerateMembers = 40,                  // Allows timing out members
+  Permission_ViewCreatorMonetizationAnalytics = 41, // Allows viewing monetization analytics
+  Permission_UseSoundboard = 42,                    // Allows using soundboard
+  Permission_CreateGuildExpressions = 43,           // Allows creating guild expressions
+  Permission_CreateEvents = 44,                     // Allows creating events
+  Permission_UseExternalSounds = 45,                // Allows using sounds from other servers
+  Permission_SendVoiceMessages = 46,                // Allows sending voice messages
+  Permission_UseClydeAI = 47                        // Allows using Clyde AI
 };
 
 // Discord webhook types enum
 enum DiscordWebhookType
 {
-  WebhookType_Incoming = 1,          // Incoming webhook (created by user in Discord)
-  WebhookType_ChannelFollower = 2,   // Channel follower webhook (follows another channel)
-  WebhookType_Application = 3        // Application webhook (created by application)
+  WebhookType_Incoming = 1,        // Incoming webhook (created by user in Discord)
+  WebhookType_ChannelFollower = 2, // Channel follower webhook (follows another channel)
+  WebhookType_Application = 3      // Application webhook (created by application)
 };
 
 // Discord user flags enum (based on DPP user_flags)
 enum DiscordUserFlags
 {
-  UserFlag_Bot =                 (1 << 0),
-  UserFlag_System =              (1 << 1),
-  UserFlag_MfaEnabled =          (1 << 2),
-  UserFlag_Verified =            (1 << 3),
-  UserFlag_NitroFull =           (1 << 4),
-  UserFlag_NitroClassic =        (1 << 5),
-  UserFlag_DiscordEmployee =     (1 << 6),
-  UserFlag_PartneredOwner =      (1 << 7),
-  UserFlag_HypesquadEvents =     (1 << 8),
-  UserFlag_BugHunter1 =          (1 << 9),
-  UserFlag_HouseBravery =        (1 << 10),
-  UserFlag_HouseBrilliance =     (1 << 11),
-  UserFlag_HouseBalance =        (1 << 12),
-  UserFlag_EarlySupporter =      (1 << 13),
-  UserFlag_TeamUser =            (1 << 14),
-  UserFlag_BugHunter2 =          (1 << 15),
-  UserFlag_VerifiedBot =         (1 << 16),
-  UserFlag_VerifiedBotDev =      (1 << 17),
-  UserFlag_AnimatedIcon =        (1 << 18),
-  UserFlag_CertifiedModerator =  (1 << 19),
-  UserFlag_BotHttpInteractions = (1 << 20),
-  UserFlag_NitroBasic =          (1 << 21),
-  UserFlag_ActiveDeveloper =     (1 << 22),
-  UserFlag_AnimatedBanner =      (1 << 23)
+  UserFlag_Bot = (1 << 0),                  // User is a bot.
+  UserFlag_System = (1 << 1),               // User is a system user (Clyde!)
+  UserFlag_MfaEnabled = (1 << 2),           // User has multi-factor authentication enabled
+  UserFlag_Verified = (1 << 3),             // User is verified (verified email address)
+  UserFlag_NitroFull = (1 << 4),            // User has full nitro
+  UserFlag_NitroClassic = (1 << 5),         // User has nitro classic
+  UserFlag_DiscordEmployee = (1 << 6),      // User is discord staff
+  UserFlag_PartneredOwner = (1 << 7),       // User owns a partnered server
+  UserFlag_HypesquadEvents = (1 << 8),      // User is a member of hypesquad events
+  UserFlag_BugHunter1 = (1 << 9),           // User has BugHunter level 1
+  UserFlag_HouseBravery = (1 << 10),        // User is a member of House Bravery
+  UserFlag_HouseBrilliance = (1 << 11),     // User is a member of House Brilliance
+  UserFlag_HouseBalance = (1 << 12),        // User is a member of House Balance
+  UserFlag_EarlySupporter = (1 << 13),      // User is an early supporter
+  UserFlag_TeamUser = (1 << 14),            // User is a team user
+  UserFlag_BugHunter2 = (1 << 15),          // User is has Bug Hunter level 2
+  UserFlag_VerifiedBot = (1 << 16),         // User is a verified bot
+  UserFlag_VerifiedBotDev = (1 << 17),      // User has the Early Verified Bot Developer badge
+  UserFlag_AnimatedIcon = (1 << 18),        // User's icon is animated
+  UserFlag_CertifiedModerator = (1 << 19),  // User is a certified moderator
+  UserFlag_BotHttpInteractions = (1 << 20), // User is a bot using HTTP interactions
+  UserFlag_NitroBasic = (1 << 21),          // User has nitro basic
+  UserFlag_ActiveDeveloper = (1 << 22),     // User has the active developer badge
+  UserFlag_AnimatedBanner = (1 << 23)       // User's banner is animated
 };
 
 enum DiscordChannelType
 {
-  ChannelType_Text = 0,                    // Text channel
-  ChannelType_DM = 1,                      // Direct message
-  ChannelType_Voice = 2,                   // Voice channel
-  ChannelType_GroupDM = 3,                 // Group DM (deprecated)
-  ChannelType_Category = 4,                // Category channel
-  ChannelType_Announcement = 5,            // Announcement channel
-  ChannelType_Store = 6,                   // Store channel (deprecated)
-  ChannelType_AnnouncementThread = 10,     // Announcement thread
-  ChannelType_PublicThread = 11,           // Public thread
-  ChannelType_PrivateThread = 12,          // Private thread
-  ChannelType_Stage = 13,                  // Stage channel
-  ChannelType_Directory = 14,              // Directory channel
-  ChannelType_Forum = 15,                  // Forum channel
-  ChannelType_Media = 16                   // Media channel
+  ChannelType_Text = 0,                // Text channel
+  ChannelType_DM = 1,                  // Direct message
+  ChannelType_Voice = 2,               // Voice channel
+  ChannelType_GroupDM = 3,             // Group DM (deprecated)
+  ChannelType_Category = 4,            // Category channel
+  ChannelType_Announcement = 5,        // Announcement channel
+  ChannelType_Store = 6,               // Store channel (deprecated)
+  ChannelType_AnnouncementThread = 10, // Announcement thread
+  ChannelType_PublicThread = 11,       // Public thread
+  ChannelType_PrivateThread = 12,      // Private thread
+  ChannelType_Stage = 13,              // Stage channel
+  ChannelType_Directory = 14,          // Directory channel
+  ChannelType_Forum = 15,              // Forum channel
+  ChannelType_Media = 16               // Media channel
 };
 
 enum DiscordCommandOptionType
 {
-  Option_String = 3,     // String option
-  Option_Integer = 4,    // Integer option
-  Option_Boolean = 5,    // Boolean option
-  Option_User = 6,       // User option
-  Option_Channel = 7,    // Channel option
-  Option_Role = 8,       // Role option
-  Option_Number = 10     // Number option
+  Option_String = 3,  // String option
+  Option_Integer = 4, // Integer option
+  Option_Boolean = 5, // Boolean option
+  Option_User = 6,    // User option
+  Option_Channel = 7, // Channel option
+  Option_Role = 8,    // Role option
+  Option_Number = 10  // Number option
 };
 
 // Discord slash command context menu types
 enum DiscordContextMenuType
 {
-  ContextMenu_None = 0,        // Undefined context menu type
-  ContextMenu_ChatInput = 1,   // Default slash commands (/ping, /pong, etc)
-  ContextMenu_User = 2,        // User context menu command  
-  ContextMenu_Message = 3      // Message context menu command
+  ContextMenu_None = 0,      // Undefined context menu type
+  ContextMenu_ChatInput = 1, // Default slash commands (/ping, /pong, etc)
+  ContextMenu_User = 2,      // User context menu command  
+  ContextMenu_Message = 3    // Message context menu command
 };
 
 // Discord interaction context types
 enum DiscordInteractionContextType
 {
-  InteractionContext_Guild = 0,          // Can be used within servers
-  InteractionContext_BotDM = 1,          // Can be used within DMs with bot
-  InteractionContext_PrivateChannel = 2  // Can be used within Group DMs and other DMs
+  InteractionContext_Guild = 0,         // Can be used within servers
+  InteractionContext_BotDM = 1,         // Can be used within DMs with bot
+  InteractionContext_PrivateChannel = 2 // Can be used within Group DMs and other DMs
 };
 
 // Discord application integration types  
 enum DiscordIntegrationType
 {
-  IntegrationType_GuildInstall = 0,  // App installed to a guild
-  IntegrationType_UserInstall = 1    // App installed to a user
+  IntegrationType_GuildInstall = 0, // App installed to a guild
+  IntegrationType_UserInstall = 1   // App installed to a user
 };
 
 // Discord command permission types
@@ -175,326 +176,212 @@ enum DiscordCommandPermissionType
 
 enum DiscordPresenceStatus
 {
-  Presence_Offline = 0,
-  Presence_Online = 1,
-  Presence_DND = 2,
-  Presence_Idle = 3,
-  Presence_Invisible = 4
+  Presence_Offline = 0,   // Status is offline
+  Presence_Online = 1,    // Status is online
+  Presence_DND = 2,       // Status is busy (Do Not Disturb)
+  Presence_Idle = 3,      // Status is idle (away)
+  Presence_Invisible = 4  // Status is invisible (not shown as online)
 };
 
 enum DiscordActivityType
 {
-  Activity_Game = 0,
-  Activity_Streaming = 1,
-  Activity_Listening = 2,
-  Activity_Watching = 3,
-  Activity_Custom = 4,
-  Activity_Competing = 5
+  Activity_Game = 0,      // Playing a game
+  Activity_Streaming = 1, // Streaming a game
+  Activity_Listening = 2, // Listening to music
+  Activity_Watching = 3,  // Watching something
+  Activity_Custom = 4,    // Custom activity (not a game)
+  Activity_Competing = 5  // Competing in a game
 };
 
 /**
  * Message flags bitmask
  */
 enum MessageFlags {
-  /**
-   * This message has been published to subscribed channels (via Channel Following)
-   */
-  MessageFlag_Crossposted = (1 << 0),
-  
-  /**
-   * This message originated from a message in another channel (via Channel Following)
-   */
-  MessageFlag_IsCrosspost = (1 << 1),
-  
-  /**
-   * Do not include any embeds when serializing this message
-   */
-  MessageFlag_SuppressEmbeds = (1 << 2),
-  
-  /**
-   * The source message for this crosspost has been deleted (via Channel Following)
-   */
-  MessageFlag_SourceMessageDeleted = (1 << 3),
-  
-  /**
-   * This message came from the urgent message system
-   */
-  MessageFlag_Urgent = (1 << 4),
-  
-  /**
-   * This message has an associated thread, with the same id as the message
-   */
-  MessageFlag_HasThread = (1 << 5),
-  
-  /**
-   * This message is only visible to the user who invoked the Interaction
-   */
-  MessageFlag_Ephemeral = (1 << 6),
-  
-  /**
-   * This message is an Interaction Response and the bot is "thinking"
-   */
-  MessageFlag_Loading = (1 << 7),
-  
-  /**
-   * This message failed to mention some roles and add their members to the thread
-   */
-  MessageFlag_ThreadMentionFailed = (1 << 8),
-  
-  /**
-   * This message will not trigger push and desktop notifications
-   */
-  MessageFlag_SuppressNotifications = (1 << 12),
-  
-  /**
-   * This message is a voice message
-   */
-  MessageFlag_IsVoiceMessage = (1 << 13),
-  
-  /**
-   * Contains forwarded snapshot
-   */
-  MessageFlag_HasSnapshot = (1 << 14),
-  
-  /**
-   * Message components vector contains v2 components
-   */
-  MessageFlag_UsingComponentsV2 = (1 << 15)
+  MessageFlag_Crossposted = (1 << 0),            // This message has been published to subscribed channels (via Channel Following)
+  MessageFlag_IsCrosspost = (1 << 1),            // This message originated from a message in another channel (via Channel Following)
+  MessageFlag_SuppressEmbeds = (1 << 2),         // Do not include any embeds when serializing this message
+  MessageFlag_SourceMessageDeleted = (1 << 3),   // The source message for this crosspost has been deleted (via Channel Following)
+  MessageFlag_Urgent = (1 << 4),                 // This message came from the urgent message system
+  MessageFlag_HasThread = (1 << 5),              // his message has an associated thread, with the same id as the message
+  MessageFlag_Ephemeral = (1 << 6),              // This message is only visible to the user who invoked the Interaction
+  MessageFlag_Loading = (1 << 7),                // This message is an Interaction Response and the bot is "thinking"
+  MessageFlag_ThreadMentionFailed = (1 << 8),    // This message failed to mention some roles and add their members to the thread
+  MessageFlag_SuppressNotifications = (1 << 12), // This message will not trigger push and desktop notifications
+  MessageFlag_IsVoiceMessage = (1 << 13),        // This message is a voice message
+  MessageFlag_HasSnapshot = (1 << 14),           // Contains forwarded snapshot
+  MessageFlag_UsingComponentsV2 = (1 << 15)      // Message components vector contains v2 components
 };
 
 /**
  * Channel flags bitmask
  */
 enum ChannelFlags {
-  /**
-   * NSFW Gated Channel
-   */
-  ChannelFlag_NSFW = (1 << 4),
-  
-  /**
-   * Video quality forced to 720p
-   */
-  ChannelFlag_VideoQuality720p = (1 << 5),
-  
-  /**
-   * Lock permissions (only used when updating channel positions)
-   */
-  ChannelFlag_LockPermissions = (1 << 6),
-  
-  /**
-   * Thread is pinned to the top of its parent forum or media channel
-   */
-  ChannelFlag_PinnedThread = (1 << 7),
-  
-  /**
-   * Whether a tag is required to be specified when creating a thread in a forum or media channel
-   */
-  ChannelFlag_RequireTag = (1 << 8),
-  
-  /**
-   * When set hides the embedded media download options. Available only for media channels
-   */
-  ChannelFlag_HideMediaDownloadOptions = (1 << 12)
+  ChannelFlag_NSFW = (1 << 4),                     // NSFW Gated Channel
+  ChannelFlag_VideoQuality720p = (1 << 5),         // Video quality forced to 720p
+  ChannelFlag_LockPermissions = (1 << 6),          // Lock permissions (only used when updating channel positions)
+  ChannelFlag_PinnedThread = (1 << 7),             // Thread is pinned to the top of its parent forum or media channel
+  ChannelFlag_RequireTag = (1 << 8),               // Whether a tag is required to be specified when creating a thread in a forum or media channel
+  ChannelFlag_HideMediaDownloadOptions = (1 << 12) // When set hides the embedded media download options. Available only for media channels
 };
 
 /**
  * Types for sort posts in a forum channel
  */
 enum ForumSortOrder {
-  /**
-   * Sort forum posts by activity (default)
-   */
-  ForumSort_LatestActivity = 0,
-  
-  /**
-   * Sort forum posts by creation time (from most recent to oldest)
-   */
-  ForumSort_CreationDate = 1
+  ForumSort_LatestActivity = 0, // Sort forum posts by activity (default)
+  ForumSort_CreationDate = 1    // Sort forum posts by creation time (from most recent to oldest)
 };
 
 /**
  * Types of forum layout views that indicates how the threads in a forum channel will be displayed for users by default
  */
 enum ForumLayoutType {
-  /**
-   * No default has been set for the forum channel
-   */
-  ForumLayout_NotSet = 0,
-  
-  /**
-   * Display posts as a list
-   */
-  ForumLayout_ListView = 1,
-  
-  /**
-   * Display posts as a collection of tiles
-   */
-  ForumLayout_GalleryView = 2
+  ForumLayout_NotSet = 0,     // No default has been set for the forum channel
+  ForumLayout_ListView = 1,   // Display posts as a list 
+  ForumLayout_GalleryView = 2 // Display posts as a collection of tiles
 };
 
 /**
  * Auto archive duration of threads
  */
 enum AutoArchiveDuration {
-  /**
-   * Auto archive duration of 1 hour (60 minutes)
-   */
-  AutoArchive_1Hour = 1,
-  
-  /**
-   * Auto archive duration of 1 day (1440 minutes)
-   */
-  AutoArchive_1Day = 2,
-  
-  /**
-   * Auto archive duration of 3 days (4320 minutes)
-   */
-  AutoArchive_3Days = 3,
-  
-  /**
-   * Auto archive duration of 1 week (10080 minutes)
-   */
-  AutoArchive_1Week = 4
+  AutoArchive_1Hour = 1, // Auto archive duration of 1 hour (60 minutes)
+  AutoArchive_1Day = 2,  // Auto archive duration of 1 day (1440 minutes)
+  AutoArchive_3Days = 3, // Auto archive duration of 3 days (4320 minutes)
+  AutoArchive_1Week = 4  // Auto archive duration of 1 week (10080 minutes)
 };
 
 /**
  * Channel permission overwrite types
  */
 enum OverwriteType {
-  /**
-   * Role overwrite
-   */
-  Overwrite_Role = 0,
-  
-  /**
-   * Member overwrite
-   */
-  Overwrite_Member = 1
+  Overwrite_Role = 0,  // Role overwrite
+  Overwrite_Member = 1 // Member overwrite
 };
 
 enum MessageType {
-	MessageType_Default = 0,
-	MessageType_RecipientAdd = 1,
-	MessageType_RecipientRemove = 2,
-	MessageType_Call = 3,
-	MessageType_ChannelNameChange = 4,
-	MessageType_ChannelIconChange = 5,
-	MessageType_ChannelPinnedMessage = 6,
-	MessageType_GuildMemberJoin = 7,
-	MessageType_UserPremiumGuildSubscription = 8,
-	MessageType_UserPremiumGuildSubscriptionTier1 = 9,
-	MessageType_UserPremiumGuildSubscriptionTier2 = 10,
-	MessageType_UserPremiumGuildSubscriptionTier3 = 11,
-	MessageType_ChannelFollowAdd = 12,
-	MessageType_GuildDiscoveryDisqualified = 14,
-	MessageType_GuildDiscoveryRequalified = 15,
-	MessageType_GuildDiscoveryGracePeriodInitialWarning = 16,
-	MessageType_GuildDiscoveryGracePeriodFinalWarning = 17,
-	MessageType_ThreadCreated = 18,
-	MessageType_Reply = 19,
-	MessageType_ApplicationCommand = 20,
-	MessageType_ThreadStarterMessage = 21,
-	MessageType_GuildInviteReminder = 22,
-	MessageType_ContextMenuCommand = 23,
-	MessageType_AutoModerationAction = 24,
-	MessageType_RoleSubscriptionPurchase = 25,
-	MessageType_InteractionPremiumUpsell = 26,
-	MessageType_StageStart = 27,
-	MessageType_StageEnd = 28,
-	MessageType_StageSpeaker = 29,
-	MessageType_StageTopic = 31,
-	MessageType_ApplicationPremiumSubscription = 32,
+  MessageType_Default = 0,                                  // Default message type
+  MessageType_RecipientAdd = 1,                             // Add recipient
+  MessageType_RecipientRemove = 2,                          // Remove recipient
+  MessageType_Call = 3,                                     // Call
+  MessageType_ChannelNameChange = 4,                        // Channel name change
+  MessageType_ChannelIconChange = 5,                        // Channel icon change
+  MessageType_ChannelPinnedMessage = 6,                     // Message pinned
+  MessageType_GuildMemberJoin = 7,                          // Member joined
+  MessageType_UserPremiumGuildSubscription = 8,             // Boost
+  MessageType_UserPremiumGuildSubscriptionTier1 = 9,        // Boost level 1
+  MessageType_UserPremiumGuildSubscriptionTier2 = 10,       // Boost level 2
+  MessageType_UserPremiumGuildSubscriptionTier3 = 11,       // Boost level 3
+  MessageType_ChannelFollowAdd = 12,                        // Follow channel
+  MessageType_GuildDiscoveryDisqualified = 14,              // Disqualified from discovery
+  MessageType_GuildDiscoveryRequalified = 15,               // Re-qualified for discovery
+  MessageType_GuildDiscoveryGracePeriodInitialWarning = 16, // Discovery grace period warning 1
+  MessageType_GuildDiscoveryGracePeriodFinalWarning  = 17,  // Discovery grace period warning 2
+  MessageType_ThreadCreated = 18,                           // Thread Created
+  MessageType_Reply = 19,                                   // Reply
+  MessageType_ApplicationCommand = 20,                      // Application command
+  MessageType_ThreadStarterMessage = 21,                    // Thread starter message
+  MessageType_GuildInviteReminder = 22,                     // Invite reminder
+  MessageType_ContextMenuCommand = 23,                      // Context Menu Command
+  MessageType_AutoModerationAction = 24,                    // Auto moderation action
+  MessageType_RoleSubscriptionPurchase = 25,                // Role subscription purchase
+  MessageType_InteractionPremiumUpsell = 26,                // Interaction premium upsell
+  MessageType_StageStart = 27,                              // Stage start
+  MessageType_StageEnd = 28,                                // Stage end
+  MessageType_StageSpeaker = 29,                            // Stage speaker
+  MessageType_StageTopic = 31,                              // Stage topic
+  MessageType_ApplicationPremiumSubscription = 32           // Guild application premium subscription
 };
 
 /**
  * Guild flags enum - matches DPP guild_flags
  */
 enum GuildFlags {
-	GuildFlag_Large = (1 << 0),                        // Large guild
-	GuildFlag_Unavailable = (1 << 1),                  // Unavailable due to outage
-	GuildFlag_WidgetEnabled = (1 << 2),                // Widget enabled
-	GuildFlag_InviteSplash = (1 << 3),                 // Can have invite splash
-	GuildFlag_VipRegions = (1 << 4),                   // Can have VIP regions
-	GuildFlag_VanityUrl = (1 << 5),                    // Can have vanity URL
-	GuildFlag_Verified = (1 << 6),                     // Verified server
-	GuildFlag_Partnered = (1 << 7),                    // Partnered server
-	GuildFlag_Community = (1 << 8),                    // Community features enabled
-	GuildFlag_RoleSubscriptionEnabled = (1 << 9),      // Role subscriptions enabled
-	GuildFlag_News = (1 << 10),                        // Has news channels
-	GuildFlag_Discoverable = (1 << 11),                // Discoverable in discovery
-	GuildFlag_Featureable = (1 << 12),                 // Featureable
-	GuildFlag_AnimatedIcon = (1 << 13),                // Can have animated icon
-	GuildFlag_Banner = (1 << 14),                      // Can have banner
-	GuildFlag_WelcomeScreenEnabled = (1 << 15),        // Has welcome screen
-	GuildFlag_MemberVerificationGate = (1 << 16),      // Has member verification
-	GuildFlag_PreviewEnabled = (1 << 17),              // Has preview enabled
-	GuildFlag_NoJoinNotifications = (1 << 18),         // Join notifications off
-	GuildFlag_NoBoostNotifications = (1 << 19),        // Boost notifications off
-	GuildFlag_HasAnimatedIcon = (1 << 20),             // Has animated icon
-	GuildFlag_HasAnimatedBanner = (1 << 21),           // Has animated banner
-	GuildFlag_NoSetupTips = (1 << 22),                 // Setup tips off
-	GuildFlag_NoStickerGreeting = (1 << 23),           // Sticker greeting off
-	GuildFlag_MonetizationEnabled = (1 << 24),         // Monetization enabled
-	GuildFlag_MoreStickers = (1 << 25),                // More sticker slots
-	GuildFlag_CreatorStorePageEnabled = (1 << 26),     // Creator store page enabled
-	GuildFlag_RoleIcons = (1 << 27),                   // Can set role icons
-	GuildFlag_SevenDayThreadArchive = (1 << 28),       // Seven day thread archive (deprecated)
-	GuildFlag_ThreeDayThreadArchive = (1 << 29),       // Three day thread archive (deprecated)
-	GuildFlag_TicketedEvents = (1 << 30),              // Ticketed events enabled
-	GuildFlag_ChannelBanners = (1 << 31)               // Channel banners (deprecated)
+	GuildFlag_Large = (1 << 0),                    // Large guild
+	GuildFlag_Unavailable = (1 << 1),              // Unavailable due to outage
+	GuildFlag_WidgetEnabled = (1 << 2),            // Widget enabled
+	GuildFlag_InviteSplash = (1 << 3),             // Can have invite splash
+	GuildFlag_VipRegions = (1 << 4),               // Can have VIP regions
+	GuildFlag_VanityUrl = (1 << 5),                // Can have vanity URL
+	GuildFlag_Verified = (1 << 6),                 // Verified server
+	GuildFlag_Partnered = (1 << 7),                // Partnered server
+	GuildFlag_Community = (1 << 8),                // Community features enabled
+	GuildFlag_RoleSubscriptionEnabled = (1 << 9),  // Role subscriptions enabled
+	GuildFlag_News = (1 << 10),                    // Has news channels
+	GuildFlag_Discoverable = (1 << 11),            // Discoverable in discovery
+	GuildFlag_Featureable = (1 << 12),             // Featureable
+	GuildFlag_AnimatedIcon = (1 << 13),            // Can have animated icon
+	GuildFlag_Banner = (1 << 14),                  // Can have banner
+	GuildFlag_WelcomeScreenEnabled = (1 << 15),    // Has welcome screen
+	GuildFlag_MemberVerificationGate = (1 << 16),  // Has member verification
+	GuildFlag_PreviewEnabled = (1 << 17),          // Has preview enabled
+	GuildFlag_NoJoinNotifications = (1 << 18),     // Join notifications off
+	GuildFlag_NoBoostNotifications = (1 << 19),    // Boost notifications off
+	GuildFlag_HasAnimatedIcon = (1 << 20),         // Has animated icon
+	GuildFlag_HasAnimatedBanner = (1 << 21),       // Has animated banner
+	GuildFlag_NoSetupTips = (1 << 22),             // Setup tips off
+	GuildFlag_NoStickerGreeting = (1 << 23),       // Sticker greeting off
+	GuildFlag_MonetizationEnabled = (1 << 24),     // Monetization enabled
+	GuildFlag_MoreStickers = (1 << 25),            // More sticker slots
+	GuildFlag_CreatorStorePageEnabled = (1 << 26), // Creator store page enabled
+	GuildFlag_RoleIcons = (1 << 27),               // Can set role icons
+	GuildFlag_SevenDayThreadArchive = (1 << 28),   // Seven day thread archive (deprecated)
+	GuildFlag_ThreeDayThreadArchive = (1 << 29),   // Three day thread archive (deprecated)
+	GuildFlag_TicketedEvents = (1 << 30),          // Ticketed events enabled
+	GuildFlag_ChannelBanners = (1 << 31)           // Channel banners (deprecated)
 };
 
 /**
  * Additional guild flags enum - matches DPP guild_flags_extra
  */
 enum GuildFlagsExtra {
-	GuildFlagExtra_PremiumProgressBarEnabled = (1 << 0),               // Premium progress bar enabled
-	GuildFlagExtra_AnimatedBanner = (1 << 1),                          // Can have animated banner
-	GuildFlagExtra_AutoModeration = (1 << 2),                          // Auto moderation enabled
-	GuildFlagExtra_InvitesDisabled = (1 << 3),                         // Invites disabled
-	GuildFlagExtra_DeveloperSupportServer = (1 << 4),                  // Developer support server
-	GuildFlagExtra_NoRoleSubscriptionNotifications = (1 << 5),         // Role subscription notifications off
-	GuildFlagExtra_NoRoleSubscriptionNotificationReplies = (1 << 6),   // Role subscription notification replies off
-	GuildFlagExtra_RoleSubscriptionsAvailableForPurchase = (1 << 7),   // Role subscriptions available for purchase
-	GuildFlagExtra_RaidAlertsDisabled = (1 << 8)                       // Raid alerts disabled
+	GuildFlagExtra_PremiumProgressBarEnabled = (1 << 0),             // Premium progress bar enabled
+	GuildFlagExtra_AnimatedBanner = (1 << 1),                        // Can have animated banner
+	GuildFlagExtra_AutoModeration = (1 << 2),                        // Auto moderation enabled
+	GuildFlagExtra_InvitesDisabled = (1 << 3),                       // Invites disabled
+	GuildFlagExtra_DeveloperSupportServer = (1 << 4),                // Developer support server
+	GuildFlagExtra_NoRoleSubscriptionNotifications = (1 << 5),       // Role subscription notifications off
+	GuildFlagExtra_NoRoleSubscriptionNotificationReplies = (1 << 6), // Role subscription notification replies off
+	GuildFlagExtra_RoleSubscriptionsAvailableForPurchase = (1 << 7), // Role subscriptions available for purchase
+	GuildFlagExtra_RaidAlertsDisabled = (1 << 8)                     // Raid alerts disabled
 };
 
 /**
  * Guild verification levels
  */
 enum GuildVerificationLevel {
-	GuildVerification_None = 0,         // Unrestricted
-	GuildVerification_Low = 1,          // Must have verified email
-	GuildVerification_Medium = 2,       // Must be registered for 5+ minutes
-	GuildVerification_High = 3,         // Must be member for 10+ minutes
-	GuildVerification_VeryHigh = 4      // Must have verified phone
+	GuildVerification_None = 0,    // Unrestricted
+	GuildVerification_Low = 1,     // Must have verified email
+	GuildVerification_Medium = 2,  // Must be registered for 5+ minutes
+	GuildVerification_High = 3,    // Must be member for 10+ minutes
+	GuildVerification_VeryHigh = 4 // Must have verified phone
 };
 
 /**
  * Guild explicit content filter levels
  */
 enum GuildExplicitContentFilter {
-	GuildExplicitContent_Disabled = 0,           // No scanning
+	GuildExplicitContent_Disabled = 0,            // No scanning
 	GuildExplicitContent_MembersWithoutRoles = 1, // Scan members without roles
-	GuildExplicitContent_AllMembers = 2          // Scan all members
+	GuildExplicitContent_AllMembers = 2           // Scan all members
 };
 
 /**
  * Guild MFA levels
  */
 enum GuildMfaLevel {
-	GuildMfa_None = 0,      // MFA not required
-	GuildMfa_Elevated = 1   // MFA required for moderation actions
+	GuildMfa_None = 0,    // MFA not required
+	GuildMfa_Elevated = 1 // MFA required for moderation actions
 };
 
 /**
  * Guild NSFW levels
  */
 enum GuildNsfwLevel {
-	GuildNsfw_Default = 0,          // Default setting
-	GuildNsfw_Explicit = 1,         // Explicit content may be present
-	GuildNsfw_Safe = 2,             // Safe for work content only
-	GuildNsfw_AgeRestricted = 3     // Age restricted (18+)
+	GuildNsfw_Default = 0,      // Default setting
+	GuildNsfw_Explicit = 1,     // Explicit content may be present
+	GuildNsfw_Safe = 2,         // Safe for work content only
+	GuildNsfw_AgeRestricted = 3 // Age restricted (18+)
 };
 
 /**
@@ -511,20 +398,20 @@ enum GuildPremiumTier {
  * Guild default message notification levels
  */
 enum GuildDefaultMessageNotifications {
-	GuildNotifications_AllMessages = 0,    // All messages
-	GuildNotifications_OnlyMentions = 1    // Only @mentions
+	GuildNotifications_AllMessages = 0, // All messages
+	GuildNotifications_OnlyMentions = 1 // Only @mentions
 };
 
 /**
  * Guild AFK timeout values (in seconds)
  */
 enum GuildAfkTimeout {
-	GuildAfk_Off = 0,       // Disabled
-	GuildAfk_60 = 60,       // 1 minute
-	GuildAfk_300 = 300,     // 5 minutes
-	GuildAfk_900 = 900,     // 15 minutes
-	GuildAfk_1800 = 1800,   // 30 minutes
-	GuildAfk_3600 = 3600    // 1 hour
+	GuildAfk_Off = 0,     // Disabled
+	GuildAfk_60 = 60,     // 1 minute
+	GuildAfk_300 = 300,   // 5 minutes
+	GuildAfk_900 = 900,   // 15 minutes
+	GuildAfk_1800 = 1800, // 30 minutes
+	GuildAfk_3600 = 3600  // 1 hour
 };
 
 /**
@@ -533,7 +420,6 @@ enum GuildAfkTimeout {
  * Reference: https://discord.com/developers/docs/topics/gateway#list-of-intents
  */
 enum DiscordIntents {
-	// Standard intents (available to all bots)
 	Intent_Guilds = (1 << 0),                       // Guild create/update/delete, role create/update/delete, channel create/update/delete
 	Intent_GuildMembers = (1 << 1),                 // Guild member add/update/remove (PRIVILEGED)
 	Intent_GuildBans = (1 << 2),                    // Guild ban add/remove
@@ -587,78 +473,59 @@ enum DiscordIntents {
 // Helper function to convert permission enum to string
 stock void DiscordPermissionToString(DiscordPermission perm, char[] buffer, int maxlen)
 {
-  switch (perm)
+  if (perm < Permission_CreateInstantInvite || perm > Permission_UseClydeAI)
   {
-    case Permission_CreateInstantInvite: strcopy(buffer, maxlen, "1");
-    case Permission_KickMembers: strcopy(buffer, maxlen, "2");
-    case Permission_BanMembers: strcopy(buffer, maxlen, "4");
-    case Permission_Administrator: strcopy(buffer, maxlen, "8");
-    case Permission_ManageChannels: strcopy(buffer, maxlen, "16");
-    case Permission_ManageGuild: strcopy(buffer, maxlen, "32");
-    case Permission_AddReactions: strcopy(buffer, maxlen, "64");
-    case Permission_ViewAuditLog: strcopy(buffer, maxlen, "128");
-    case Permission_PrioritySpeaker: strcopy(buffer, maxlen, "256");
-    case Permission_Stream: strcopy(buffer, maxlen, "512");
-    case Permission_ViewChannel: strcopy(buffer, maxlen, "1024");
-    case Permission_SendMessages: strcopy(buffer, maxlen, "2048");
-    case Permission_SendTTSMessages: strcopy(buffer, maxlen, "4096");
-    case Permission_ManageMessages: strcopy(buffer, maxlen, "8192");
-    case Permission_EmbedLinks: strcopy(buffer, maxlen, "16384");
-    case Permission_AttachFiles: strcopy(buffer, maxlen, "32768");
-    case Permission_ReadMessageHistory: strcopy(buffer, maxlen, "65536");
-    case Permission_MentionEveryone: strcopy(buffer, maxlen, "131072");
-    case Permission_UseExternalEmojis: strcopy(buffer, maxlen, "262144");
-    case Permission_ViewGuildInsights: strcopy(buffer, maxlen, "524288");
-    case Permission_Connect: strcopy(buffer, maxlen, "1048576");
-    case Permission_Speak: strcopy(buffer, maxlen, "2097152");
-    case Permission_MuteMembers: strcopy(buffer, maxlen, "4194304");
-    case Permission_DeafenMembers: strcopy(buffer, maxlen, "8388608");
-    case Permission_MoveMembers: strcopy(buffer, maxlen, "16777216");
-    case Permission_UseVAD: strcopy(buffer, maxlen, "33554432");
-    case Permission_ChangeNickname: strcopy(buffer, maxlen, "67108864");
-    case Permission_ManageNicknames: strcopy(buffer, maxlen, "134217728");
-    case Permission_ManageRoles: strcopy(buffer, maxlen, "268435456");
-    case Permission_ManageWebhooks: strcopy(buffer, maxlen, "536870912");
-    case Permission_ManageEmojis: strcopy(buffer, maxlen, "1073741824");
-    case Permission_UseSlashCommands: strcopy(buffer, maxlen, "2147483648");
-    case Permission_RequestToSpeak: strcopy(buffer, maxlen, "4294967296");
-    case Permission_ManageEvents: strcopy(buffer, maxlen, "8589934592");
-    case Permission_ManageThreads: strcopy(buffer, maxlen, "17179869184");
-    case Permission_CreatePublicThreads: strcopy(buffer, maxlen, "34359738368");
-    case Permission_CreatePrivateThreads: strcopy(buffer, maxlen, "68719476736");
-    case Permission_UseExternalStickers: strcopy(buffer, maxlen, "137438953472");
-    case Permission_SendMessagesInThreads: strcopy(buffer, maxlen, "274877906944");
-    case Permission_UseEmbeddedActivities: strcopy(buffer, maxlen, "549755813888");
-    case Permission_ModerateMembers: strcopy(buffer, maxlen, "1099511627776");
-    case Permission_ViewCreatorMonetizationAnalytics: strcopy(buffer, maxlen, "2199023255552");
-    case Permission_UseSoundboard: strcopy(buffer, maxlen, "4398046511104");
-    case Permission_CreateGuildExpressions: strcopy(buffer, maxlen, "8796093022208");
-    case Permission_CreateEvents: strcopy(buffer, maxlen, "17592186044416");
-    case Permission_UseExternalSounds: strcopy(buffer, maxlen, "35184372088832");
-    case Permission_SendVoiceMessages: strcopy(buffer, maxlen, "70368744177664");
-    default: strcopy(buffer, maxlen, "0");
+    strcopy(buffer, maxlen, "0");
+    return;
   }
+  
+  int result[2];
+  int permInt = view_as<int>(perm);
+  
+  if (permInt < 32)
+  {
+    // Permission fits in lower 32 bits
+    result[0] = 1 << permInt;
+    result[1] = 0;
+  }
+  else
+  {
+    // Permission requires upper 32 bits
+    result[0] = 0;
+    result[1] = 1 << (permInt - 32);
+  }
+  
+  // Convert 64-bit result to string
+  Int64ToString(result, buffer, maxlen);
 }
 
-// Helper function to combine multiple permissions into a bitmask string
+// helper function to combine multiple permissions into a bitmask string
 stock void DiscordCombinePermissions(const DiscordPermission[] permissions, int numPermissions, char[] buffer, int maxlen)
 {
-  char combinedValue[64] = "0";
+  int combinedValue[2] = {0, 0}; // 64-bit integer as [lower32, upper32]
   
   for (int i = 0; i < numPermissions; i++)
   {
-    char permStr[32];
-    DiscordPermissionToString(permissions[i], permStr, sizeof(permStr));
+    DiscordPermission perm = permissions[i];
     
-    // Simple bitwise OR operation using string values
-    int currentValue = StringToInt(combinedValue);
-    int permValue = StringToInt(permStr);
-    currentValue |= permValue;
+    // Skip invalid permissions
+    if (perm < Permission_CreateInstantInvite || perm > Permission_UseClydeAI)
+      continue;
     
-    IntToString(currentValue, combinedValue, sizeof(combinedValue));
+    int permInt = view_as<int>(perm);
+    
+    if (permInt < 32)
+    {
+      combinedValue[0] |= (1 << permInt); // Set bit in lower 32 bits
+    }
+    else
+    {
+      combinedValue[1] |= (1 << (permInt - 32)); // Set bit in upper 32 bits
+    }
   }
   
-  strcopy(buffer, maxlen, combinedValue);
+  // Convert 64-bit result back to string
+  Int64ToString(combinedValue, buffer, maxlen);
 }
 
 /*
@@ -707,7 +574,7 @@ methodmap Discord < Handle {
    * Creates a new Discord bot client
    *
    * @param token     Discord bot token
-   * @param intents   Optional Discord intents bitmask to control what events the bot receives (default: 0 = all intents)
+   * @param intents   Optional Discord intents bitmask to control what events the bot receives (default: DISCORD_INTENTS_DEFAULT | Intent_MessageContent)
    * @return          New Discord client handle, or INVALID_HANDLE on failure
    * @note            If no intents specified, the bot will use all available intents for backward compatibility.
    *                  For better performance and compliance, specify only the intents you need.
