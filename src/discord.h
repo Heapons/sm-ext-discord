@@ -17,7 +17,7 @@ public:
 
 	void SetTitle(const char* title) { m_embed.set_title(title); }
 	void SetDescription(const char* desc) { m_embed.set_description(desc); }
-	void SetColor(int color) { m_embed.set_color(color); }
+	void SetColor(uint32_t color) { m_embed.set_color(color); }
 	void SetUrl(const char* url) { m_embed.set_url(url); }
 	void SetAuthor(const char* name, const char* url = nullptr, const char* icon_url = nullptr) {
 		m_embed.set_author(name, url ? url : "", icon_url ? icon_url : "");
@@ -40,7 +40,6 @@ public:
 	std::string GetTitle() const { return m_embed.title; }
 	std::string GetDescription() const { return m_embed.description; }
 	uint32_t GetColor() const { return m_embed.color.value_or(0); }
-	void SetColor(uint32_t color) { m_embed.set_color(color); }
 	time_t GetTimestamp() const { return m_embed.timestamp; }
 	std::string GetType() const { return m_embed.type; }
 	std::string GetUrl() const { return m_embed.url; }
@@ -197,7 +196,7 @@ public:
 	bool HasAnimatedIcon() const { return m_user.has_animated_icon(); }
 	bool IsActiveDeveloper() const { return m_user.is_active_developer(); }
 	uint32_t GetFlags() const { return m_user.flags; }
-	bool HasFlag(uint32_t flag) const { return (m_user.flags & (1U << flag)) != 0; }
+	bool HasFlag(uint32_t flag) const { return (m_user.flags & flag) != 0; }
 	
 	// Guild member specific methods
 	bool HasGuildMember() const { return m_has_member; }
@@ -244,6 +243,21 @@ private:
 
 public:
 	DiscordMessage(const dpp::message& msg, DiscordClient* client) : m_message(msg), m_client(client), m_authorHandle(BAD_HANDLE) {}
+	DiscordMessage(DiscordClient* client) : m_client(client), m_authorHandle(BAD_HANDLE) {} // Empty message
+	DiscordMessage(const char* content, DiscordClient* client) : m_client(client), m_authorHandle(BAD_HANDLE) { 
+		m_message.content = content; 
+	}
+	DiscordMessage(dpp::snowflake channel_id, const char* content, DiscordClient* client) : m_client(client), m_authorHandle(BAD_HANDLE) { 
+		m_message.channel_id = channel_id;
+		m_message.content = content; 
+	}
+	DiscordMessage(const DiscordEmbed* embed, DiscordClient* client) : m_client(client), m_authorHandle(BAD_HANDLE) { 
+		if (embed) m_message.add_embed(embed->GetEmbed()); 
+	}
+	DiscordMessage(dpp::snowflake channel_id, const DiscordEmbed* embed, DiscordClient* client) : m_client(client), m_authorHandle(BAD_HANDLE) { 
+		m_message.channel_id = channel_id;
+		if (embed) m_message.add_embed(embed->GetEmbed()); 
+	}
 	
 	~DiscordMessage() {
 		if (m_authorHandle != BAD_HANDLE) {
@@ -355,6 +369,19 @@ public:
 	bool AddReaction(const char* emoji);
 	bool RemoveReaction(const char* emoji);
 	bool RemoveAllReactions();
+	
+	// Message property setters
+	void SetContent(const char* content) { m_message.content = content; }
+	void SetChannelId(dpp::snowflake channel_id) { m_message.channel_id = channel_id; }
+	void SetType(dpp::message_type type) { m_message.type = type; }
+	void SetFlags(uint16_t flags) { m_message.flags = flags; }
+	void SetTTS(bool tts) { m_message.tts = tts; }
+	void SetNonce(const char* nonce) { m_message.nonce = nonce; }
+	void AddEmbed(const class DiscordEmbed* embed) { 
+		if (embed) m_message.add_embed(embed->GetEmbed()); 
+	}
+	void ClearEmbeds() { m_message.embeds.clear(); }
+	bool Send(); // Send this message to its channel
 	
 	// Internal accessor
 	const dpp::message& GetDPPMessage() const { return m_message; }
@@ -490,6 +517,7 @@ public:
 	bool CreateInvite(int max_age = 86400, int max_uses = 0, bool temporary = false, bool unique = false);
 	bool SendMessage(const char* content);
 	bool SendMessageEmbed(const char* content, const class DiscordEmbed* embed);
+	bool SendDiscordMessage(const class DiscordMessage* message);
 	bool SetRTCRegion(const char* region);
 	
 	// Permission checking
@@ -584,8 +612,20 @@ private:
 
 	std::string m_botId;
 	std::string m_botName;
-	std::string m_botDiscriminator;
+	uint16_t m_botDiscriminator;
 	std::string m_botAvatarUrl;
+
+	struct CallbackData {
+		IChangeableForward* forward;
+		cell_t data;
+		CallbackData() : forward(nullptr), data(0) {}
+	};
+
+	CallbackData m_readyCallback;
+	CallbackData m_messageCallback;
+	CallbackData m_errorCallback;
+	CallbackData m_slashCommandCallback;
+	CallbackData m_autocompleteCallback;
 
 	void RunBot();
 	void SetupEventHandlers();
@@ -602,11 +642,41 @@ public:
 		m_discord_handle = handle; 
 	}
 	Handle_t GetHandle() const { return m_discord_handle; }
+
+	// Per-instance forward callback registration methods
+	void SetReadyCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_readyCallback.forward) forwards->ReleaseForward(m_readyCallback.forward);
+		m_readyCallback.forward = forward; 
+		m_readyCallback.data = data;
+	}
+	void SetMessageCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_messageCallback.forward) forwards->ReleaseForward(m_messageCallback.forward);
+		m_messageCallback.forward = forward; 
+		m_messageCallback.data = data;
+	}
+	void SetErrorCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_errorCallback.forward) forwards->ReleaseForward(m_errorCallback.forward);
+		m_errorCallback.forward = forward; 
+		m_errorCallback.data = data;
+	}
+	void SetSlashCommandCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_slashCommandCallback.forward) forwards->ReleaseForward(m_slashCommandCallback.forward);
+		m_slashCommandCallback.forward = forward; 
+		m_slashCommandCallback.data = data;
+	}
+	void SetAutocompleteCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_autocompleteCallback.forward) forwards->ReleaseForward(m_autocompleteCallback.forward);
+		m_autocompleteCallback.forward = forward; 
+		m_autocompleteCallback.data = data;
+	}
+
 	bool SetPresence(dpp::presence presence);
 	bool ExecuteWebhook(dpp::webhook wh, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
 	bool ExecuteWebhookEmbed(dpp::webhook wh, const char* message, const DiscordEmbed* embed, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
 	bool SendMessage(dpp::snowflake channel_id, const char* message, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
 	bool SendMessageEmbed(dpp::snowflake channel_id, const char* message, const DiscordEmbed* embed, int allowed_mentions_mask, std::vector<dpp::snowflake> users, std::vector<dpp::snowflake> roles);
+	bool SendDiscordMessage(const DiscordMessage* message);
+	bool SendDiscordMessageToChannel(dpp::snowflake channel_id, const DiscordMessage* message);
 	bool RegisterSlashCommandObject(dpp::snowflake guild_id, const dpp::slashcommand& command);
 	bool RegisterGlobalSlashCommandObject(const dpp::slashcommand& command);
 	void CreateAutocompleteResponse(dpp::snowflake id, const std::string &token, const dpp::interaction_response &response);
@@ -654,7 +724,7 @@ public:
 
 	const char* GetBotId() const { return m_botId.c_str(); }
 	const char* GetBotName() const { return m_botName.c_str(); }
-	const char* GetBotDiscriminator() const { return m_botDiscriminator.c_str(); }
+	uint16_t GetBotDiscriminator() const { return m_botDiscriminator; }
 	const char* GetBotAvatarUrl() const { return m_botAvatarUrl.c_str(); }
 
 	uint64_t GetUptime() const;
@@ -665,7 +735,7 @@ public:
 		if (m_cluster) {
 			m_botId = std::to_string(m_cluster->me.id);
 			m_botName = m_cluster->me.username;
-			m_botDiscriminator = std::to_string(m_cluster->me.discriminator);
+			m_botDiscriminator = m_cluster->me.discriminator;
 			m_botAvatarUrl = m_cluster->me.get_avatar_url();
 		}
 	}

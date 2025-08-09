@@ -1,5 +1,170 @@
 #include "extension.h"
 
+static DiscordEmbed* GetEmbedPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordEmbed* embed;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return embed;
+}
+
+static DiscordClient* GetDiscordPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordClient* discord;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordHandle, &sec, (void**)&discord)) != HandleError_None)
+	{
+		pContext->ReportError("Invalid Discord handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return discord;
+}
+
+static DiscordWebhook* GetWebhookPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordWebhook* webhook;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordWebhookHandle, &sec, (void**)&webhook)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord webhook handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return webhook;
+}
+
+static DiscordUser* GetUserPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordUser* user;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordUserHandle, &sec, (void**)&user)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord user handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return user;
+}
+
+static DiscordSlashCommand* GetSlashCommandPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordSlashCommand* command;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordSlashCommandHandle, &sec, (void**)&command)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord slash command handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return command;
+}
+
+static DiscordGuild* GetGuildPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordGuild* guild;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordGuildHandle, &sec, (void**)&guild)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord guild handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return guild;
+}
+
+static DiscordMessage* GetMessagePointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordMessage* message;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return message;
+}
+
+static DiscordForumTag* GetForumTagPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordForumTag* tag;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordForumTagHandle, &sec, (void**)&tag)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord forum tag handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return tag;
+}
+
+static DiscordChannel* GetChannelPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordChannel* channel;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordChannelHandle, &sec, (void**)&channel)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord channel handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return channel;
+}
+
+static DiscordInteraction* GetInteractionPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordInteraction* interaction;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord interaction handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return interaction;
+}
+
+static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	DiscordAutocompleteInteraction* interaction;
+	if ((err = handlesys->ReadHandle(handle, g_DiscordAutocompleteInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid Discord autocomplete interaction handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return interaction;
+}
+
 bool DiscordUser::HasPermission(const char* permission) const {
 	if (!m_has_member || !permission) return false;
 	
@@ -602,6 +767,24 @@ bool DiscordMessage::CreateThread(const char* name, int auto_archive_duration) {
 	}
 }
 
+bool DiscordMessage::Send() {
+	if (!m_client) return false;
+	
+	if (m_message.channel_id == 0) {
+		smutils->LogError(myself, "Cannot send message: channel_id not set");
+		return false;
+	}
+	
+	try {
+		m_client->GetCluster()->message_create(m_message);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to send message: %s", e.what());
+		return false;
+	}
+}
+
 bool DiscordChannel::HasUserPermission(const dpp::user& user, const char* permission) const {
 	if (!permission) return false;
 	
@@ -820,6 +1003,21 @@ bool DiscordChannel::SendMessageEmbed(const char* content, const DiscordEmbed* e
 	}
 }
 
+bool DiscordChannel::SendDiscordMessage(const DiscordMessage* message) {
+	if (!m_client || !message) return false;
+	
+	try {
+		dpp::message msg = message->GetDPPMessage();
+		msg.channel_id = m_channel.id; // Override channel ID to this channel
+		m_client->GetCluster()->message_create(msg);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to send DiscordMessage: %s", e.what());
+		return false;
+	}
+}
+
 bool DiscordChannel::SetRTCRegion(const char* region) {
 	if (!m_client) return false;
 	
@@ -991,6 +1189,13 @@ DiscordClient::DiscordClient(const char* token, uint32_t intents) : m_discord_ha
 DiscordClient::~DiscordClient()
 {
 	Stop();
+	
+	// Release forwards
+	if (m_readyCallback.forward) forwards->ReleaseForward(m_readyCallback.forward);
+	if (m_messageCallback.forward) forwards->ReleaseForward(m_messageCallback.forward);
+	if (m_errorCallback.forward) forwards->ReleaseForward(m_errorCallback.forward);
+	if (m_slashCommandCallback.forward) forwards->ReleaseForward(m_slashCommandCallback.forward);
+	if (m_autocompleteCallback.forward) forwards->ReleaseForward(m_autocompleteCallback.forward);
 }
 
 bool DiscordClient::Initialize()
@@ -1146,6 +1351,45 @@ bool DiscordClient::SendMessageEmbed(dpp::snowflake channel_id, const char* mess
 	}
 }
 
+bool DiscordClient::SendDiscordMessage(const DiscordMessage* message)
+{
+	if (!IsRunning() || !message) {
+		return false;
+	}
+
+	try {
+		const dpp::message& msg = message->GetDPPMessage();
+		if (msg.channel_id == 0) {
+			smutils->LogError(myself, "Cannot send DiscordMessage: channel_id not set");
+			return false;
+		}
+		m_cluster->message_create(msg);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to send DiscordMessage: %s", e.what());
+		return false;
+	}
+}
+
+bool DiscordClient::SendDiscordMessageToChannel(dpp::snowflake channel_id, const DiscordMessage* message)
+{
+	if (!IsRunning() || !message) {
+		return false;
+	}
+
+	try {
+		dpp::message msg = message->GetDPPMessage();
+		msg.channel_id = channel_id; // Override the channel ID
+		m_cluster->message_create(msg);
+		return true;
+	}
+	catch (const std::exception& e) {
+		smutils->LogError(myself, "Failed to send DiscordMessage to channel: %s", e.what());
+		return false;
+	}
+}
+
 void DiscordClient::SetupEventHandlers()
 {
 	if (!m_cluster) {
@@ -1155,16 +1399,17 @@ void DiscordClient::SetupEventHandlers()
 	m_cluster->on_ready([this](const dpp::ready_t& event) {
 		UpdateBotInfo();
 		g_TaskQueue.Push([this]() {
-			if (g_pForwardReady && g_pForwardReady->GetFunctionCount()) {
-				g_pForwardReady->PushCell(m_discord_handle);
-				g_pForwardReady->Execute(nullptr);
+			if (m_readyCallback.forward && m_readyCallback.forward->GetFunctionCount()) {
+				m_readyCallback.forward->PushCell(m_discord_handle);
+				m_readyCallback.forward->PushCell(m_readyCallback.data);
+				m_readyCallback.forward->Execute(nullptr);
 			}
 			});
 		});
 
 	m_cluster->on_message_create([this](const dpp::message_create_t& event) {
 		g_TaskQueue.Push([this, msg = event.msg]() {
-			if (g_pForwardMessage && g_pForwardMessage->GetFunctionCount()) {
+			if (m_messageCallback.forward && m_messageCallback.forward->GetFunctionCount()) {
 				DiscordMessage* message = new DiscordMessage(msg, this);
 				HandleError err;
 				HandleSecurity sec;
@@ -1178,9 +1423,10 @@ void DiscordClient::SetupEventHandlers()
 					&err);
 
 				if (messageHandle != BAD_HANDLE) {
-					g_pForwardMessage->PushCell(m_discord_handle);
-					g_pForwardMessage->PushCell(messageHandle);
-					g_pForwardMessage->Execute(nullptr);
+					m_messageCallback.forward->PushCell(m_discord_handle);
+					m_messageCallback.forward->PushCell(messageHandle);
+					m_messageCallback.forward->PushCell(m_messageCallback.data);
+					m_messageCallback.forward->Execute(nullptr);
 
 					handlesys->FreeHandle(messageHandle, &sec);
 				} else {
@@ -1194,17 +1440,18 @@ void DiscordClient::SetupEventHandlers()
 		//std::cout << "[Discord]: " << event.message << std::endl;
 		if (event.severity >= dpp::ll_error) {
 			g_TaskQueue.Push([this, message = event.message]() {
-			if (g_pForwardError && g_pForwardError->GetFunctionCount()) {
-				g_pForwardError->PushCell(m_discord_handle);
-				g_pForwardError->PushString(message.c_str());
-				g_pForwardError->Execute(nullptr);
+			if (m_errorCallback.forward && m_errorCallback.forward->GetFunctionCount()) {
+				m_errorCallback.forward->PushCell(m_discord_handle);
+				m_errorCallback.forward->PushString(message.c_str());
+				m_errorCallback.forward->PushCell(m_errorCallback.data);
+				m_errorCallback.forward->Execute(nullptr);
 			}
 			});
 		}});
 
 	m_cluster->on_slashcommand([this](const dpp::slashcommand_t& event) {
 		g_TaskQueue.Push([this, event]() {
-			if (g_pForwardSlashCommand && g_pForwardSlashCommand->GetFunctionCount()) {
+			if (m_slashCommandCallback.forward && m_slashCommandCallback.forward->GetFunctionCount()) {
 				DiscordInteraction* interaction = new DiscordInteraction(event, this);
 
 				HandleError err;
@@ -1219,9 +1466,10 @@ void DiscordClient::SetupEventHandlers()
 					&err);
 
 				if (interactionHandle != BAD_HANDLE) {
-					g_pForwardSlashCommand->PushCell(m_discord_handle);
-					g_pForwardSlashCommand->PushCell(interactionHandle);
-					g_pForwardSlashCommand->Execute(nullptr);
+					m_slashCommandCallback.forward->PushCell(m_discord_handle);
+					m_slashCommandCallback.forward->PushCell(interactionHandle);
+					m_slashCommandCallback.forward->PushCell(m_slashCommandCallback.data);
+					m_slashCommandCallback.forward->Execute(nullptr);
 
 					handlesys->FreeHandle(interactionHandle, &sec);
 				} else {
@@ -1233,7 +1481,7 @@ void DiscordClient::SetupEventHandlers()
 
 	m_cluster->on_autocomplete([this](const dpp::autocomplete_t& event) {
 		g_TaskQueue.Push([this, event]() {
-			if (g_pForwardAutocomplete && g_pForwardAutocomplete->GetFunctionCount()) {
+			if (m_autocompleteCallback.forward && m_autocompleteCallback.forward->GetFunctionCount()) {
 				DiscordAutocompleteInteraction* interaction = new DiscordAutocompleteInteraction(event, this);
 
 				HandleError err;
@@ -1252,12 +1500,13 @@ void DiscordClient::SetupEventHandlers()
 					for (auto & opt : event.options) {
 						dpp::command_option_type type = opt.type;
 
-						g_pForwardAutocomplete->PushCell(m_discord_handle);
-						g_pForwardAutocomplete->PushCell(interactionHandle);
-						g_pForwardAutocomplete->PushCell(opt.focused);
-						g_pForwardAutocomplete->PushCell(type);
-						g_pForwardAutocomplete->PushString(opt.name.c_str());
-						g_pForwardAutocomplete->Execute(nullptr);
+						m_autocompleteCallback.forward->PushCell(m_discord_handle);
+						m_autocompleteCallback.forward->PushCell(interactionHandle);
+						m_autocompleteCallback.forward->PushCell(opt.focused);
+						m_autocompleteCallback.forward->PushCell(type);
+						m_autocompleteCallback.forward->PushString(opt.name.c_str());
+						m_autocompleteCallback.forward->PushCell(m_autocompleteCallback.data);
+						m_autocompleteCallback.forward->Execute(nullptr);
 					}
 
 					handlesys->FreeHandle(interactionHandle, &sec);
@@ -1269,34 +1518,104 @@ void DiscordClient::SetupEventHandlers()
 	});
 }
 
-static DiscordClient* GetDiscordPointer(IPluginContext* pContext, Handle_t handle)
+static cell_t discord_SetReadyCallback(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) return 0;
 
-	DiscordClient* discord;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordHandle, &sec, (void**)&discord)) != HandleError_None)
-	{
-		pContext->ReportError("Invalid Discord handle %x (error %d)", handle, err);
-		return nullptr;
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		return pContext->ThrowNativeError("Invalid callback function");
 	}
 
-	return discord;
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
+	if (!forward) {
+		return pContext->ThrowNativeError("Could not create forward");
+	}
+
+	forward->AddFunction(callback);
+	discord->SetReadyCallback(forward, params[3]);
+	return 1;
 }
 
-static DiscordWebhook* GetWebhookPointer(IPluginContext* pContext, Handle_t handle)
+static cell_t discord_SetMessageCallback(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) return 0;
 
-	DiscordWebhook* webhook;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordWebhookHandle, &sec, (void**)&webhook)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord webhook handle %x (error %d)", handle, err);
-		return nullptr;
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		return pContext->ThrowNativeError("Invalid callback function");
 	}
 
-	return webhook;
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Cell);
+	if (!forward) {
+		return pContext->ThrowNativeError("Could not create forward");
+	}
+
+	forward->AddFunction(callback);
+	discord->SetMessageCallback(forward, params[3]);
+	return 1;
+}
+
+static cell_t discord_SetErrorCallback(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		return pContext->ThrowNativeError("Invalid callback function");
+	}
+
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_String, Param_Cell);
+	if (!forward) {
+		return pContext->ThrowNativeError("Could not create forward");
+	}
+
+	forward->AddFunction(callback);
+	discord->SetErrorCallback(forward, params[3]);
+	return 1;
+}
+
+static cell_t discord_SetSlashCommandCallback(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		return pContext->ThrowNativeError("Invalid callback function");
+	}
+
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_Cell, Param_Cell);
+	if (!forward) {
+		return pContext->ThrowNativeError("Could not create forward");
+	}
+
+	forward->AddFunction(callback);
+	discord->SetSlashCommandCallback(forward, params[3]);
+	return 1;
+}
+
+static cell_t discord_SetAutocompleteCallback(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) return 0;
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[2]);
+	if (!callback) {
+		return pContext->ThrowNativeError("Invalid callback function");
+	}
+
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 6, nullptr, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String, Param_Cell);
+	if (!forward) {
+		return pContext->ThrowNativeError("Could not create forward");
+	}
+
+	forward->AddFunction(callback);
+	discord->SetAutocompleteCallback(forward, params[3]);
+	return 1;
 }
 
 static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* params)
@@ -1388,13 +1707,8 @@ static cell_t discord_GetBotDiscriminator(IPluginContext* pContext, const cell_t
 		return 0;
 	}
 
-	const char* discriminator = discord->GetBotDiscriminator();
-	if (!discriminator) {
-		return 0;
-	}
-
-	pContext->StringToLocal(params[2], params[3], discriminator);
-	return 1;
+	
+	return discord->GetBotDiscriminator();
 }
 
 static cell_t discord_GetBotAvatarUrl(IPluginContext* pContext, const cell_t* params)
@@ -1631,18 +1945,54 @@ static cell_t discord_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 		}
 	}
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[4], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[4], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[4]);
+	if (!embed) {
+		return 0;
 	}
 
 	try {
 		dpp::snowflake channel = std::stoull(channelId);
 		return discord->SendMessageEmbed(channel, message, embed, params[5], users, roles);
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return 0;
+	}
+}
+
+static cell_t discord_SendDiscordMessage(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	DiscordMessage* message = GetMessagePointer(pContext, params[2]);
+	if (!message) {
+		return 0;
+	}
+
+	return discord->SendDiscordMessage(message);
+}
+
+static cell_t discord_SendDiscordMessageToChannel(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	DiscordMessage* message = GetMessagePointer(pContext, params[3]);
+	if (!message) {
+		return 0;
+	}
+
+	try {
+		dpp::snowflake channel = std::stoull(channelId);
+		return discord->SendDiscordMessageToChannel(channel, message);
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid channel ID format: %s", channelId);
@@ -1676,21 +2026,6 @@ static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 	}
 
 	return handle;
-}
-
-static DiscordEmbed* GetEmbedPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return embed;
 }
 
 static cell_t embed_SetTitle(IPluginContext* pContext, const cell_t* params)
@@ -1830,6 +2165,46 @@ static cell_t embed_SetImage(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t embed_SetVideo(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	char* url;
+	pContext->LocalToString(params[2], &url);
+	embed->SetVideo(url);
+	return 1;
+}
+
+static cell_t embed_SetProvider(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	char* name;
+	char* url = nullptr;
+	pContext->LocalToString(params[2], &name);
+	
+	if (params[0] >= 3) {
+		pContext->LocalToString(params[3], &url);
+	}
+	
+	embed->SetProvider(name, url ? url : "");
+	return 1;
+}
+
+static cell_t embed_SetTimestamp(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	embed->SetTimestamp(params[2]);
+	return 1;
+}
+
 static cell_t embed_GetTitle(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
@@ -1960,6 +2335,251 @@ static cell_t embed_GetImageUrl(IPluginContext* pContext, const cell_t* params)
 	return 1;
 }
 
+static cell_t embed_GetType(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string type = embed->GetType();
+	pContext->StringToLocal(params[2], params[3], type.c_str());
+	return 1;
+}
+
+static cell_t embed_GetTimestamp(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+
+  return static_cast<cell_t>(embed->GetTimestamp());
+}
+
+static cell_t embed_GetAuthorProxyIconUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetAuthorProxyIconUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetFooterProxyUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetFooterProxyUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetThumbnailProxyUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetThumbnailProxyUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetThumbnailWidth(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetThumbnailWidth();
+}
+
+static cell_t embed_GetThumbnailHeight(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetThumbnailHeight();
+}
+
+static cell_t embed_GetImageProxyUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetImageProxyUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetImageWidth(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetImageWidth();
+}
+
+static cell_t embed_GetImageHeight(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetImageHeight();
+}
+
+static cell_t embed_GetVideoUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetVideoUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetVideoProxyUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetVideoProxyUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_GetVideoWidth(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetVideoWidth();
+}
+
+static cell_t embed_GetVideoHeight(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->GetVideoHeight();
+}
+
+static cell_t embed_GetProviderName(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string name = embed->GetProviderName();
+	pContext->StringToLocal(params[2], params[3], name.c_str());
+	return 1;
+}
+
+static cell_t embed_GetProviderUrl(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	std::string url = embed->GetProviderUrl();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t embed_RemoveField(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->RemoveField(params[2]);
+}
+
+static cell_t embed_ClearFields(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	embed->ClearFields();
+	return 1;
+}
+
+static cell_t embed_HasThumbnail(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasThumbnail();
+}
+
+static cell_t embed_HasImage(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasImage();
+}
+
+static cell_t embed_HasVideo(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasVideo();
+}
+
+static cell_t embed_HasProvider(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasProvider();
+}
+
+static cell_t embed_HasAuthor(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasAuthor();
+}
+
+static cell_t embed_HasFooter(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasFooter();
+}
+
+static cell_t embed_HasTimestamp(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
+	if (!embed) {
+		return 0;
+	}
+	return embed->HasTimestamp();
+}
+
 static cell_t embed_GetFieldCount(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordEmbed* embed = GetEmbedPointer(pContext, params[1]);
@@ -2005,36 +2625,6 @@ static cell_t embed_GetFieldInline(IPluginContext* pContext, const cell_t* param
 
 	size_t index = static_cast<size_t>(params[2]);
 	return embed->GetFieldInline(index);
-}
-
-static DiscordUser* GetUserPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordUser* user;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordUserHandle, &sec, (void**)&user)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord user handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return user;
-}
-
-static DiscordSlashCommand* GetSlashCommandPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordSlashCommand* command;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordSlashCommandHandle, &sec, (void**)&command)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord slash command handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return command;
 }
 
 static cell_t user_CreateFromId(IPluginContext* pContext, const cell_t* params)
@@ -2156,64 +2746,192 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 	char* userId;
 	pContext->LocalToString(params[2], &userId);
 
-	IPluginFunction* callback = pContext->GetFunctionById(params[3]);
+	char* guildId;
+	pContext->LocalToString(params[3], &guildId);
+
+	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
 	if (!callback) {
 		pContext->ReportError("Invalid callback function");
 		return 0;
 	}
 
-	cell_t data = params[4];
+	cell_t data = params[5];
 
 	try {
 		dpp::snowflake userFlake = std::stoull(userId);
+		dpp::snowflake guildFlake = 0;
+		if (guildId && strlen(guildId) > 0) {
+			guildFlake = std::stoull(guildId);
+		}
 
-		discord->GetCluster()->user_get(userFlake, [discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
-			g_TaskQueue.Push([discord, callback, data, confirmation]() {
-				if (confirmation.is_error()) {
-					return;
+		if (guildFlake != 0) {
+			dpp::guild* guild = dpp::find_guild(guildFlake);
+			if (guild) {
+				auto member_it = guild->members.find(userFlake);
+				if (member_it != guild->members.end()) {
+					g_TaskQueue.Push([discord, callback, data, member_it]() {
+						try {
+							dpp::user* user_ptr = member_it->second.get_user();
+							if (!user_ptr) {
+								return;
+							}
+							DiscordUser* pDiscordUser = new DiscordUser(*user_ptr, member_it->second, discord);
+							
+							if (!pDiscordUser) {
+								return;
+							}
+
+							HandleError err;
+							HandleSecurity sec;
+							sec.pOwner = myself->GetIdentity();
+							sec.pIdentity = myself->GetIdentity();
+							Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+							if (handle == BAD_HANDLE) {
+								delete pDiscordUser;
+								return;
+							}
+
+							callback->PushCell(discord->GetHandle());
+							callback->PushCell(handle);
+							callback->PushCell(data);
+							callback->Execute(nullptr);
+							
+							handlesys->FreeHandle(handle, &sec);
+						}
+						catch (const std::exception& e) {
+							return;
+						}
+					});
+					return 1;
 				}
-
-				try {
-					DiscordUser* pDiscordUser = nullptr;
-					
-					if (std::holds_alternative<dpp::user>(confirmation.value)) {
-						dpp::user user_obj = std::get<dpp::user>(confirmation.value);
-						pDiscordUser = new DiscordUser(user_obj, discord);
-					} else if (std::holds_alternative<dpp::user_identified>(confirmation.value)) {
-						dpp::user_identified user_identified = std::get<dpp::user_identified>(confirmation.value);
-						pDiscordUser = new DiscordUser(user_identified, discord);
-					} else {
-						dpp::user user_obj = confirmation.get<dpp::user>();
-						pDiscordUser = new DiscordUser(user_obj, discord);
-					}
-					
-					if (!pDiscordUser) {
+			}
+			
+			discord->GetCluster()->guild_get_member(guildFlake, userFlake, [discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
+				g_TaskQueue.Push([discord, callback, data, confirmation]() {
+					if (confirmation.is_error()) {
 						return;
 					}
 
-					HandleError err;
-					HandleSecurity sec;
-					sec.pOwner = myself->GetIdentity();
-					sec.pIdentity = myself->GetIdentity();
-					Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+					try {
+						dpp::guild_member member_obj = confirmation.get<dpp::guild_member>();
+						dpp::user* user_ptr = member_obj.get_user();
+						if (!user_ptr) {
+							return;
+						}
+						DiscordUser* pDiscordUser = new DiscordUser(*user_ptr, member_obj, discord);
+						
+						if (!pDiscordUser) {
+							return;
+						}
 
-					if (handle == BAD_HANDLE) {
-						delete pDiscordUser;
+						HandleError err;
+						HandleSecurity sec;
+						sec.pOwner = myself->GetIdentity();
+						sec.pIdentity = myself->GetIdentity();
+						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+						if (handle == BAD_HANDLE) {
+							delete pDiscordUser;
+							return;
+						}
+
+						callback->PushCell(discord->GetHandle());
+						callback->PushCell(handle);
+						callback->PushCell(data);
+						callback->Execute(nullptr);
+						
+						handlesys->FreeHandle(handle, &sec);
+					}
+					catch (const std::exception& e) {
 						return;
 					}
-
-					callback->PushCell(discord->GetHandle());
-					callback->PushCell(handle);
-					callback->PushCell(data);
-					callback->Execute(nullptr);
-					
-					handlesys->FreeHandle(handle, &sec);
-				}
-				catch (const std::exception& e) {
-					return;
-				}
+				});
 			});
-		});
+		} else {
+			dpp::user* cached_user = dpp::find_user(userFlake);
+			if (cached_user) {
+				g_TaskQueue.Push([discord, callback, data, cached_user]() {
+					try {
+						DiscordUser* pDiscordUser = new DiscordUser(*cached_user, discord);
+						
+						if (!pDiscordUser) {
+							return;
+						}
+
+						HandleError err;
+						HandleSecurity sec;
+						sec.pOwner = myself->GetIdentity();
+						sec.pIdentity = myself->GetIdentity();
+						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+						if (handle == BAD_HANDLE) {
+							delete pDiscordUser;
+							return;
+						}
+
+						callback->PushCell(discord->GetHandle());
+						callback->PushCell(handle);
+						callback->PushCell(data);
+						callback->Execute(nullptr);
+						
+						handlesys->FreeHandle(handle, &sec);
+					}
+					catch (const std::exception& e) {
+						return;
+					}
+				});
+				return 1;
+			}
+
+			discord->GetCluster()->user_get(userFlake, [discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
+				g_TaskQueue.Push([discord, callback, data, confirmation]() {
+					if (confirmation.is_error()) {
+						return;
+					}
+
+					try {
+						DiscordUser* pDiscordUser = nullptr;
+						
+						if (std::holds_alternative<dpp::user>(confirmation.value)) {
+							dpp::user user_obj = std::get<dpp::user>(confirmation.value);
+							pDiscordUser = new DiscordUser(user_obj, discord);
+						} else if (std::holds_alternative<dpp::user_identified>(confirmation.value)) {
+							dpp::user_identified user_identified = std::get<dpp::user_identified>(confirmation.value);
+							pDiscordUser = new DiscordUser(user_identified, discord);
+						} else {
+							dpp::user user_obj = confirmation.get<dpp::user>();
+							pDiscordUser = new DiscordUser(user_obj, discord);
+						}
+						
+						if (!pDiscordUser) {
+							return;
+						}
+
+						HandleError err;
+						HandleSecurity sec;
+						sec.pOwner = myself->GetIdentity();
+						sec.pIdentity = myself->GetIdentity();
+						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
+
+						if (handle == BAD_HANDLE) {
+							delete pDiscordUser;
+							return;
+						}
+
+						callback->PushCell(discord->GetHandle());
+						callback->PushCell(handle);
+						callback->PushCell(data);
+						callback->Execute(nullptr);
+						
+						handlesys->FreeHandle(handle, &sec);
+					}
+					catch (const std::exception& e) {
+						return;
+					}
+				});
+			});
+		}
 
 		return 1;
 	}
@@ -2311,6 +3029,37 @@ static cell_t channel_FetchChannel(IPluginContext* pContext, const cell_t* param
 	try {
 		dpp::snowflake channelFlake = std::stoull(channelId);
 
+		dpp::channel* cached_channel = dpp::find_channel(channelFlake);
+		if (cached_channel) {
+			g_TaskQueue.Push([discord, callback, data, cached_channel]() {
+				try {
+					DiscordChannel* pDiscordChannel = new DiscordChannel(*cached_channel, discord);
+
+					HandleError err;
+					HandleSecurity sec;
+					sec.pOwner = myself->GetIdentity();
+					sec.pIdentity = myself->GetIdentity();
+					Handle_t handle = handlesys->CreateHandleEx(g_DiscordChannelHandle, pDiscordChannel, &sec, nullptr, &err);
+
+					if (handle == BAD_HANDLE) {
+						delete pDiscordChannel;
+						return;
+					}
+
+					callback->PushCell(discord->GetHandle());
+					callback->PushCell(handle);
+					callback->PushCell(data);
+					callback->Execute(nullptr);
+					
+					handlesys->FreeHandle(handle, &sec);
+				}
+				catch (const std::exception& e) {
+					return;
+				}
+			});
+			return 1;
+		}
+
 		discord->GetCluster()->channel_get(channelFlake, [discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
 			g_TaskQueue.Push([discord, callback, data, confirmation]() {
 				if (confirmation.is_error()) {
@@ -2370,12 +3119,6 @@ static cell_t message_CreateFromId(IPluginContext* pContext, const cell_t* param
 		dpp::snowflake messageFlake = std::stoull(messageId);
 		dpp::snowflake channelFlake = std::stoull(channelId);
 
-		// Try to get the full message information from cache
-		// Note: DPP doesn't have a find_message function, so we create a stub message
-		// The message content and other properties will only be available if the bot
-		// has cached this message from events or API calls
-		
-		// Create a minimal message object with the IDs set
 		dpp::message message_obj;
 		message_obj.id = messageFlake;
 		message_obj.channel_id = channelFlake;
@@ -2396,6 +3139,152 @@ static cell_t message_CreateFromId(IPluginContext* pContext, const cell_t* param
 	}
 	catch (const std::exception& e) {
 		pContext->ReportError("Invalid message or channel ID format: %s, %s", messageId, channelId);
+		return BAD_HANDLE;
+	}
+}
+
+static cell_t message_CreateEmpty(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return BAD_HANDLE;
+	}
+
+	DiscordMessage* pDiscordMessage = new DiscordMessage(discord);
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE) {
+		delete pDiscordMessage;
+		pContext->ReportError("Could not create message handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t message_CreateWithContent(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return BAD_HANDLE;
+	}
+
+	char* content;
+	pContext->LocalToString(params[2], &content);
+
+	DiscordMessage* pDiscordMessage = new DiscordMessage(content, discord);
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE) {
+		delete pDiscordMessage;
+		pContext->ReportError("Could not create message handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t message_CreateWithChannel(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return BAD_HANDLE;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	char* content;
+	pContext->LocalToString(params[3], &content);
+
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+		DiscordMessage* pDiscordMessage = new DiscordMessage(channelFlake, content, discord);
+
+		HandleError err;
+		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+		Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
+
+		if (handle == BAD_HANDLE) {
+			delete pDiscordMessage;
+			pContext->ReportError("Could not create message handle (error %d)", err);
+			return BAD_HANDLE;
+		}
+
+		return handle;
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return BAD_HANDLE;
+	}
+}
+
+static cell_t message_CreateWithEmbed(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return BAD_HANDLE;
+	}
+
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[2]);
+	if (!embed) {
+		return BAD_HANDLE;
+	}
+
+	DiscordMessage* pDiscordMessage = new DiscordMessage(embed, discord);
+
+	HandleError err = HandleError_None;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
+
+	if (handle == BAD_HANDLE) {
+		delete pDiscordMessage;
+		pContext->ReportError("Could not create message handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t message_CreateWithChannelEmbed(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return BAD_HANDLE;
+	}
+
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return BAD_HANDLE;
+	}
+
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+		DiscordMessage* pDiscordMessage = new DiscordMessage(channelFlake, embed, discord);
+
+		HandleError err = HandleError_None;
+		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+		Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
+
+		if (handle == BAD_HANDLE) {
+			delete pDiscordMessage;
+			pContext->ReportError("Could not create message handle (error %d)", err);
+			return BAD_HANDLE;
+		}
+
+		return handle;
+	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
 		return BAD_HANDLE;
 	}
 }
@@ -2517,6 +3406,16 @@ static cell_t user_GetFlags(IPluginContext* pContext, const cell_t* params)
 	}
 
 	return user->GetFlags();
+}
+
+static cell_t user_HasFlag(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordUser* user = GetUserPointer(pContext, params[1]);
+	if (!user) {
+		return 0;
+	}
+
+	return user->HasFlag(static_cast<dpp::user_flags>(params[2]));
 }
 
 static cell_t user_IsSystem(IPluginContext* pContext, const cell_t* params)
@@ -3157,21 +4056,6 @@ bool DiscordGuild::Modify(const char* name, const char* description)
 	}
 }
 
-static DiscordGuild* GetGuildPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordGuild* guild;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordGuildHandle, &sec, (void**)&guild)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord guild handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return guild;
-}
-
 static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
@@ -3192,6 +4076,37 @@ static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 
 	try {
 		dpp::snowflake guildFlake = std::stoull(guildId);
+
+		dpp::guild* cached_guild = dpp::find_guild(guildFlake);
+		if (cached_guild) {
+			g_TaskQueue.Push([discord, callback, data, cached_guild]() {
+				try {
+					DiscordGuild* pDiscordGuild = new DiscordGuild(*cached_guild, discord);
+
+					HandleError err;
+					HandleSecurity sec;
+					sec.pOwner = myself->GetIdentity();
+					sec.pIdentity = myself->GetIdentity();
+					Handle_t handle = handlesys->CreateHandleEx(g_DiscordGuildHandle, pDiscordGuild, &sec, nullptr, &err);
+
+					if (handle == BAD_HANDLE) {
+						delete pDiscordGuild;
+						return;
+					}
+
+					callback->PushCell(discord->GetHandle());
+					callback->PushCell(handle);
+					callback->PushCell(data);
+					callback->Execute(nullptr);
+					
+					handlesys->FreeHandle(handle, &sec);
+				}
+				catch (const std::exception& e) {
+					return;
+				}
+			});
+			return 1;
+		}
 
 		discord->GetCluster()->guild_get(guildFlake, [discord, callback, data](const dpp::confirmation_callback_t& confirmation) {
 			g_TaskQueue.Push([discord, callback, data, confirmation]() {
@@ -3974,7 +4889,7 @@ static cell_t guild_GetBasePermissions(IPluginContext* pContext, const cell_t* p
 		dpp::snowflake user_id = std::stoull(user_id_str);
 		return static_cast<cell_t>(guild->GetBasePermissions(user_id));
 	} catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed get base permissions: %s", e.what());
+		pContext->ReportError("Failed get base permissions: %s", e.what());
 		return 0;
 	}
 }
@@ -3996,7 +4911,7 @@ static cell_t guild_GetPermissionsInChannel(IPluginContext* pContext, const cell
 		dpp::snowflake channel_id = std::stoull(channel_id_str);
 		return static_cast<cell_t>(guild->GetPermissionsInChannel(user_id, channel_id));
 	} catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed get base permissions in channel: %s", e.what());
+		pContext->ReportError("Failed get permissions in channel: %s", e.what());
 		return 0;
 	}
 }
@@ -4017,7 +4932,7 @@ static cell_t guild_HasPermission(IPluginContext* pContext, const cell_t* params
 		dpp::snowflake user_id = std::stoull(user_id_str);
 		return guild->HasPermission(user_id, permission);
 	} catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed call has permissions: %s", e.what());
+		pContext->ReportError("Failed to check permissions: %s", e.what());
 		return 0;
 	}
 }
@@ -4041,7 +4956,7 @@ static cell_t guild_HasPermissionInChannel(IPluginContext* pContext, const cell_
 		dpp::snowflake channel_id = std::stoull(channel_id_str);
 		return guild->HasPermissionInChannel(user_id, channel_id, permission);
 	} catch (const std::exception& e) {
-		smutils->LogError(myself, "Failed call has permissions in channel: %s", e.what());
+		pContext->ReportError("Failed to check permissions in channel: %s", e.what());
 		return 0;
 	}
 }
@@ -4823,36 +5738,6 @@ static cell_t slashcommand_GetGuildId(IPluginContext* pContext, const cell_t* pa
 	return 1;
 }
 
-static DiscordMessage* GetMessagePointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordMessage* message;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordMessageHandle, &sec, (void**)&message)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord message handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return message;
-}
-
-static DiscordForumTag* GetForumTagPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordForumTag* tag;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordForumTagHandle, &sec, (void**)&tag)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord forum tag handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return tag;
-}
-
 static cell_t message_GetContent(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
@@ -5007,12 +5892,9 @@ static cell_t message_EditEmbed(IPluginContext* pContext, const cell_t* params)
 	char* content;
 	pContext->LocalToString(params[2], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	return message->EditEmbed(content, embed);
@@ -5104,12 +5986,9 @@ static cell_t message_ReplyEmbed(IPluginContext* pContext, const cell_t* params)
 	char* content;
 	pContext->LocalToString(params[2], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	return message->ReplyEmbed(content, embed);
@@ -5315,19 +6194,179 @@ static cell_t message_GetMentionedChannelCount(IPluginContext* pContext, const c
 	return static_cast<cell_t>(message->GetMentionedChannelCount());
 }
 
-static DiscordChannel* GetChannelPointer(IPluginContext* pContext, Handle_t handle)
+static cell_t message_GetMentionedUserId(IPluginContext* pContext, const cell_t* params)
 {
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string userId = message->GetMentionedUserId(params[2]);
+	pContext->StringToLocal(params[3], params[4], userId.c_str());
+	return 1;
+}
 
-	DiscordChannel* channel;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordChannelHandle, &sec, (void**)&channel)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord channel handle %x (error %d)", handle, err);
-		return nullptr;
+static cell_t message_GetMentionedRoleId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string roleId = message->GetMentionedRoleId(params[2]);
+	pContext->StringToLocal(params[3], params[4], roleId.c_str());
+	return 1;
+}
+
+static cell_t message_GetWebhookId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string webhookId = message->GetWebhookId();
+	pContext->StringToLocal(params[2], params[3], webhookId.c_str());
+	return 1;
+}
+
+static cell_t message_GetNonce(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	const char* nonce = message->GetNonce();
+	pContext->StringToLocal(params[2], params[3], nonce);
+	return 1;
+}
+
+static cell_t message_GetURL(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string url = message->GetURL();
+	pContext->StringToLocal(params[2], params[3], url.c_str());
+	return 1;
+}
+
+static cell_t message_GetAttachmentFilename(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string filename = message->GetAttachmentFilename(params[2]);
+	pContext->StringToLocal(params[3], params[4], filename.c_str());
+	return 1;
+}
+
+static cell_t message_GetAttachmentURL(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	std::string url = message->GetAttachmentURL(params[2]);
+	pContext->StringToLocal(params[3], params[4], url.c_str());
+	return 1;
+}
+
+static cell_t message_GetAttachmentSize(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	return message->GetAttachmentSize(params[2]);
+}
+
+static cell_t message_SetChannelId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	char* channelId;
+	pContext->LocalToString(params[2], &channelId);
+	
+	try {
+		dpp::snowflake channelFlake = std::stoull(channelId);
+		message->SetChannelId(channelFlake);
+		return 1;
 	}
+	catch (const std::exception& e) {
+		pContext->ReportError("Invalid channel ID format: %s", channelId);
+		return 0;
+	}
+}
 
-	return channel;
+static cell_t message_SetType(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	message->SetType(static_cast<dpp::message_type>(params[2]));
+	return 1;
+}
+
+static cell_t message_SetFlags(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	message->SetFlags(static_cast<uint16_t>(params[2]));
+	return 1;
+}
+
+static cell_t message_SetTTS(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	message->SetTTS(params[2] ? true : false);
+	return 1;
+}
+
+static cell_t message_SetNonce(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	char* nonce;
+	pContext->LocalToString(params[2], &nonce);
+	message->SetNonce(nonce);
+	return 1;
+}
+
+static cell_t message_ClearEmbeds(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	message->ClearEmbeds();
+	return 1;
+}
+
+static cell_t message_Send(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	return message->Send();
+}
+
+static cell_t message_SetContent(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	char* content;
+	pContext->LocalToString(params[2], &content);
+	message->SetContent(content);
+	return 1;
+}
+
+static cell_t message_AddEmbed(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
+	if (!message) return 0;
+	
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[2]);
+	if (!embed) return 0;
+	
+	message->AddEmbed(embed);
+	return 1;
 }
 
 static cell_t channel_CreateFromId(IPluginContext* pContext, const cell_t* params)
@@ -5836,15 +6875,27 @@ static cell_t channel_SendMessageEmbed(IPluginContext* pContext, const cell_t* p
 	char* content;
 	pContext->LocalToString(params[2], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	return channel->SendMessageEmbed(content, embed);
+}
+
+static cell_t channel_SendDiscordMessage(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
+	if (!channel) {
+		return 0;
+	}
+
+	DiscordMessage* message = GetMessagePointer(pContext, params[2]);
+	if (!message) {
+		return 0;
+	}
+
+	return channel->SendDiscordMessage(message);
 }
 
 static cell_t channel_SetRTCRegion(IPluginContext* pContext, const cell_t* params)
@@ -5997,6 +7048,24 @@ static cell_t channel_GetPermissionOverwriteCount(IPluginContext* pContext, cons
 	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
 	if (!channel) return 0;
 	return static_cast<cell_t>(channel->GetPermissionOverwriteCount());
+}
+
+static cell_t channel_GetPermissionOverwriteTargetId(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
+	if (!channel) return 0;
+	
+	std::string targetId = channel->GetPermissionOverwriteTargetId(params[2]);
+	pContext->StringToLocal(params[3], params[4], targetId.c_str());
+	return 1;
+}
+
+static cell_t channel_GetPermissionOverwriteType(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordChannel* channel = GetChannelPointer(pContext, params[1]);
+	if (!channel) return 0;
+	
+	return static_cast<cell_t>(channel->GetPermissionOverwriteType(params[2]));
 }
 
 static cell_t channel_GetAvailableTagCount(IPluginContext* pContext, const cell_t* params)
@@ -6709,12 +7778,9 @@ static cell_t webhook_ExecuteEmbed(IPluginContext* pContext, const cell_t* param
 	char* message;
 	pContext->LocalToString(params[2], &message);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	int allowed_mentions_mask = params[4];
@@ -6752,21 +7818,6 @@ static cell_t webhook_ExecuteEmbed(IPluginContext* pContext, const cell_t* param
 	return webhook->ExecuteEmbed(message, embed, allowed_mentions_mask, users, roles);
 }
 
-static DiscordInteraction* GetInteractionPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordInteraction* interaction;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord interaction handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return interaction;
-}
-
 static cell_t interaction_CreateResponse(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordInteraction* interaction = GetInteractionPointer(pContext, params[1]);
@@ -6791,12 +7842,9 @@ static cell_t interaction_CreateResponseEmbed(IPluginContext* pContext, const ce
 	char* content;
 	pContext->LocalToString(params[2], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	interaction->CreateResponseEmbed(content, embed);
@@ -6925,12 +7973,9 @@ static cell_t interaction_CreateEphemeralResponseEmbed(IPluginContext* pContext,
 	char* content;
 	pContext->LocalToString(params[2], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[3], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[3], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[3]);
+	if (!embed) {
+		return 0;
 	}
 
 	interaction->CreateEphemeralResponseEmbed(content, embed);
@@ -7023,21 +8068,6 @@ static cell_t interaction_GetUserNickname(IPluginContext* pContext, const cell_t
 
 	pContext->StringToLocal(params[2], params[3], interaction->GetUserNickname().c_str());
 	return 1;
-}
-
-static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPluginContext* pContext, Handle_t handle)
-{
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordAutocompleteInteraction* interaction;
-	if ((err = handlesys->ReadHandle(handle, g_DiscordAutocompleteInteractionHandle, &sec, (void**)&interaction)) != HandleError_None)
-	{
-		pContext->ThrowNativeError("Invalid Discord autocomplete interaction handle %x (error %d)", handle, err);
-		return nullptr;
-	}
-
-	return interaction;
 }
 
 static cell_t autocomplete_GetCommandName(IPluginContext* pContext, const cell_t* params)
@@ -7330,13 +8360,9 @@ static cell_t discord_EditMessageEmbed(IPluginContext* pContext, const cell_t* p
 	char* content;
 	pContext->LocalToString(params[4], &content);
 
-	HandleError err;
-	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
-
-	DiscordEmbed* embed;
-	if ((err = handlesys->ReadHandle(params[5], g_DiscordEmbedHandle, &sec, (void**)&embed)) != HandleError_None)
-	{
-		return pContext->ThrowNativeError("Invalid Discord embed handle %x (error %d)", params[5], err);
+	DiscordEmbed* embed = GetEmbedPointer(pContext, params[5]);
+	if (!embed) {
+		return 0;
 	}
 
 	try {
@@ -8066,14 +9092,15 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.Stop", discord_Stop},
 	{"Discord.GetBotId", discord_GetBotId},
 	{"Discord.GetBotName", discord_GetBotName},
-	{"Discord.GetBotDiscriminator", discord_GetBotDiscriminator},
+	{"Discord.BotDiscriminator.get", discord_GetBotDiscriminator},
 	{"Discord.GetBotAvatarUrl", discord_GetBotAvatarUrl},
 	{"Discord.Uptime.get", discord_GetUptime},
 	{"Discord.SetPresence", discord_SetPresence},
-	{"Discord.CreateWebhook", discord_CreateWebhook},
-	{"Discord.GetWebhook", discord_GetWebhook},
-	{"Discord.GetChannelWebhooks", discord_GetChannelWebhooks},
 	{"Discord.IsRunning.get", discord_IsRunning},
+  {"Discord.SendMessage", discord_SendMessage},
+  {"Discord.SendMessageEmbed", discord_SendMessageEmbed},
+	{"Discord.SendDiscordMessage", discord_SendDiscordMessage},
+	{"Discord.SendDiscordMessageToChannel", discord_SendDiscordMessageToChannel},
 	{"Discord.EditMessage", discord_EditMessage},
 	{"Discord.EditMessageEmbed", discord_EditMessageEmbed},
 	{"Discord.DeleteMessage", discord_DeleteMessage},
@@ -8081,6 +9108,11 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.DeleteGlobalCommand", discord_DeleteGlobalCommand},
 	{"Discord.BulkDeleteGuildCommands", discord_BulkDeleteGuildCommands},
 	{"Discord.BulkDeleteGlobalCommands", discord_BulkDeleteGlobalCommands},
+	{"Discord.SetReadyCallback", discord_SetReadyCallback},
+	{"Discord.SetMessageCallback", discord_SetMessageCallback},
+	{"Discord.SetErrorCallback", discord_SetErrorCallback},
+	{"Discord.SetSlashCommandCallback", discord_SetSlashCommandCallback},
+	{"Discord.SetAutocompleteCallback", discord_SetAutocompleteCallback},
 
 	// User
 	{"DiscordUser.DiscordUser", user_CreateFromId},
@@ -8096,6 +9128,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordUser.GetUrl", user_GetUrl},
 	{"DiscordUser.GetFormattedUsername", user_GetFormattedUsername},
 	{"DiscordUser.Flags.get", user_GetFlags},
+  {"DiscordUser.HasFlag", user_HasFlag},
 	{"DiscordUser.IsSystem.get", user_IsSystem},
 	{"DiscordUser.IsMfaEnabled.get", user_IsMfaEnabled},
 	{"DiscordUser.IsVerified.get", user_IsVerified},
@@ -8280,6 +9313,11 @@ const sp_nativeinfo_t discord_natives[] = {
 
 	// Message
 	{"DiscordMessage.DiscordMessage", message_CreateFromId},
+	{"DiscordMessage.CreateEmpty", message_CreateEmpty},
+	{"DiscordMessage.CreateWithContent", message_CreateWithContent},
+	{"DiscordMessage.CreateWithChannel", message_CreateWithChannel},
+	{"DiscordMessage.CreateWithEmbed", message_CreateWithEmbed},
+	{"DiscordMessage.CreateWithChannelEmbed", message_CreateWithChannelEmbed},
 	{"DiscordMessage.FetchMessage", message_FetchMessage},
 	{"DiscordMessage.GetContent", message_GetContent},
 	{"DiscordMessage.ContentLength.get", message_GetContentLength},
@@ -8289,8 +9327,10 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.Author.get", message_GetAuthor},
 	{"DiscordMessage.GetAuthorNickname", message_GetAuthorNickname},
 	{"DiscordMessage.Type.get", message_GetType},
+  {"DiscordMessage.Type.set", message_SetType},
 	{"DiscordMessage.IsPinned.get", message_IsPinned},
 	{"DiscordMessage.IsTTS.get", message_IsTTS},
+  {"DiscordMessage.IsTTS.set", message_SetTTS},
 	{"DiscordMessage.IsMentionEveryone.get", message_IsMentionEveryone},
 	{"DiscordMessage.IsBot.get", message_IsBot},
 	{"DiscordMessage.Edit", message_Edit},
@@ -8308,6 +9348,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	
 	// New message properties
 	{"DiscordMessage.Flags.get", message_GetFlags},
+  {"DiscordMessage.Flags.set", message_SetFlags},
 	{"DiscordMessage.IsCrossposted.get", message_IsCrossposted},
 	{"DiscordMessage.IsCrosspost.get", message_IsCrosspost},
 	{"DiscordMessage.EmbedsSuppressed.get", message_EmbedsSuppressed},
@@ -8334,6 +9375,22 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.MentionedUserCount.get", message_GetMentionedUserCount},
 	{"DiscordMessage.MentionedRoleCount.get", message_GetMentionedRoleCount},
 	{"DiscordMessage.MentionedChannelCount.get", message_GetMentionedChannelCount},
+	{"DiscordMessage.GetMentionedUserId", message_GetMentionedUserId},
+	{"DiscordMessage.GetMentionedRoleId", message_GetMentionedRoleId},
+	{"DiscordMessage.GetWebhookId", message_GetWebhookId},
+	{"DiscordMessage.GetNonce", message_GetNonce},
+	{"DiscordMessage.GetURL", message_GetURL},
+	{"DiscordMessage.GetAttachmentFilename", message_GetAttachmentFilename},
+	{"DiscordMessage.GetAttachmentURL", message_GetAttachmentURL},
+	{"DiscordMessage.GetAttachmentSize", message_GetAttachmentSize},
+	
+	// Message setters
+	{"DiscordMessage.SetContent", message_SetContent},
+	{"DiscordMessage.SetChannelId", message_SetChannelId},
+	{"DiscordMessage.SetNonce", message_SetNonce},
+	{"DiscordMessage.AddEmbed", message_AddEmbed},
+	{"DiscordMessage.ClearEmbeds", message_ClearEmbeds},
+	{"DiscordMessage.Send", message_Send},
 
 	// Channel
 	{"DiscordChannel.DiscordChannel", channel_CreateFromId},
@@ -8388,6 +9445,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordChannel.IsDownloadOptionsHidden.get", channel_IsDownloadOptionsHidden},
 	{"DiscordChannel.IsLockedPermissions.get", channel_IsLockedPermissions},
 	{"DiscordChannel.PermissionOverwriteCount.get", channel_GetPermissionOverwriteCount},
+	{"DiscordChannel.GetPermissionOverwriteTargetId", channel_GetPermissionOverwriteTargetId},
+	{"DiscordChannel.GetPermissionOverwriteType", channel_GetPermissionOverwriteType},
 	{"DiscordChannel.AvailableTagCount.get", channel_GetAvailableTagCount},
 	{"DiscordChannel.GetAvailableTagName", channel_GetAvailableTagName},
 	{"DiscordChannel.GetAvailableTagId", channel_GetAvailableTagId},
@@ -8407,6 +9466,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordChannel.CreateInvite", channel_CreateInvite},
 	{"DiscordChannel.SendMessage", channel_SendMessage},
 	{"DiscordChannel.SendMessageEmbed", channel_SendMessageEmbed},
+	{"DiscordChannel.SendDiscordMessage", channel_SendDiscordMessage},
 	{"DiscordChannel.SetRTCRegion", channel_SetRTCRegion},
 
 	// Webhook
@@ -8449,6 +9509,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordEmbed.AddField", embed_AddField},
 	{"DiscordEmbed.SetThumbnail", embed_SetThumbnail},
 	{"DiscordEmbed.SetImage", embed_SetImage},
+	{"DiscordEmbed.SetVideo", embed_SetVideo},
+	{"DiscordEmbed.SetProvider", embed_SetProvider},
 	{"DiscordEmbed.GetTitle", embed_GetTitle},
 	{"DiscordEmbed.GetDescription", embed_GetDescription},
 	{"DiscordEmbed.Color.get", embed_GetColor},
@@ -8456,14 +9518,40 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordEmbed.GetAuthorName", embed_GetAuthorName},
 	{"DiscordEmbed.GetAuthorUrl", embed_GetAuthorUrl},
 	{"DiscordEmbed.GetAuthorIconUrl", embed_GetAuthorIconUrl},
+	{"DiscordEmbed.GetAuthorProxyIconUrl", embed_GetAuthorProxyIconUrl},
 	{"DiscordEmbed.GetFooterText", embed_GetFooterText},
 	{"DiscordEmbed.GetFooterIconUrl", embed_GetFooterIconUrl},
+	{"DiscordEmbed.GetFooterProxyUrl", embed_GetFooterProxyUrl},
 	{"DiscordEmbed.GetThumbnailUrl", embed_GetThumbnailUrl},
+	{"DiscordEmbed.GetThumbnailProxyUrl", embed_GetThumbnailProxyUrl},
+	{"DiscordEmbed.ThumbnailWidth.get", embed_GetThumbnailWidth},
+	{"DiscordEmbed.ThumbnailHeight.get", embed_GetThumbnailHeight},
 	{"DiscordEmbed.GetImageUrl", embed_GetImageUrl},
+	{"DiscordEmbed.GetImageProxyUrl", embed_GetImageProxyUrl},
+	{"DiscordEmbed.ImageWidth.get", embed_GetImageWidth},
+	{"DiscordEmbed.ImageHeight.get", embed_GetImageHeight},
+	{"DiscordEmbed.GetVideoUrl", embed_GetVideoUrl},
+	{"DiscordEmbed.GetVideoProxyUrl", embed_GetVideoProxyUrl},
+	{"DiscordEmbed.VideoWidth.get", embed_GetVideoWidth},
+	{"DiscordEmbed.VideoHeight.get", embed_GetVideoHeight},
+	{"DiscordEmbed.GetProviderName", embed_GetProviderName},
+	{"DiscordEmbed.GetProviderUrl", embed_GetProviderUrl},
+	{"DiscordEmbed.GetType", embed_GetType},
+	{"DiscordEmbed.Timestamp.get", embed_GetTimestamp},
+  {"DiscordEmbed.Timestamp.set", embed_SetTimestamp},
 	{"DiscordEmbed.FieldCount.get", embed_GetFieldCount},
 	{"DiscordEmbed.GetFieldName", embed_GetFieldName},
 	{"DiscordEmbed.GetFieldValue", embed_GetFieldValue},
 	{"DiscordEmbed.GetFieldInline", embed_GetFieldInline},
+	{"DiscordEmbed.RemoveField", embed_RemoveField},
+	{"DiscordEmbed.ClearFields", embed_ClearFields},
+	{"DiscordEmbed.HasThumbnail.get", embed_HasThumbnail},
+	{"DiscordEmbed.HasImage.get", embed_HasImage},
+	{"DiscordEmbed.HasVideo.get", embed_HasVideo},
+	{"DiscordEmbed.HasProvider.get", embed_HasProvider},
+	{"DiscordEmbed.HasAuthor.get", embed_HasAuthor},
+	{"DiscordEmbed.HasFooter.get", embed_HasFooter},
+	{"DiscordEmbed.HasTimestamp.get", embed_HasTimestamp},
 
 	// Slash Command
 	{"DiscordInteraction.CreateResponse", interaction_CreateResponse},

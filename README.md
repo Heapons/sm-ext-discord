@@ -81,11 +81,15 @@ public void OnPluginStart()
   // Create Discord bot instance
   g_Discord = new Discord("YOUR_BOT_TOKEN");
   
+  // Register event callbacks
+  g_Discord.SetReadyCallback(OnDiscordReady);
+  g_Discord.SetSlashCommandCallback(OnDiscordSlashCommand);
+  
   // Start the bot
   g_Discord.Start();
 }
 
-public void Discord_OnReady(Discord discord)
+void OnDiscordReady(Discord discord, any data)
 {
   char botName[32], botId[32];
   discord.GetBotName(botName, sizeof(botName));
@@ -101,7 +105,7 @@ public void Discord_OnReady(Discord discord)
   delete pingCmd;
 }
 
-public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction)
+void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any data)
 {
   char commandName[32];
   interaction.GetCommandName(commandName, sizeof(commandName));
@@ -115,7 +119,21 @@ public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interacti
 
 ## Advanced Slash Command with Options Example
 ```cpp
-public void Discord_OnReady(Discord discord)
+public void OnPluginStart()
+{
+  // Create Discord bot instance
+  g_Discord = new Discord("YOUR_BOT_TOKEN");
+  
+  // Register event callbacks
+  g_Discord.SetReadyCallback(OnDiscordReady);
+  g_Discord.SetSlashCommandCallback(OnDiscordSlashCommand);
+  g_Discord.SetAutocompleteCallback(OnDiscordAutocomplete);
+  
+  // Start the bot
+  g_Discord.Start();
+}
+
+void OnDiscordReady(Discord discord, any data)
 {
   // Create a ban command with multiple options
   DiscordSlashCommand banCmd = new DiscordSlashCommand(discord);
@@ -138,7 +156,7 @@ public void Discord_OnReady(Discord discord)
   delete banCmd;
 }
 
-public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction)
+void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any data)
 {
   char commandName[32];
   interaction.GetCommandName(commandName, sizeof(commandName));
@@ -177,7 +195,7 @@ public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interacti
 
 ## Permission System Example
 ```cpp
-public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction)
+void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any data)
 {
   DiscordUser user = interaction.User;
   
@@ -260,7 +278,7 @@ public void OnPluginStart()
 
 ## User Information Example
 ```cpp
-public void Discord_OnMessage(Discord discord, DiscordMessage message)
+void OnDiscordMessage(Discord discord, DiscordMessage message, any data)
 {
   DiscordUser author = message.Author;
   
@@ -345,6 +363,225 @@ Action Timer_EditMessage(Handle timer, any messageHandle)
 }
 ```
 
+### DiscordMessage Object Usage Examples
+```cpp
+// Example 1: Create and send a simple message
+void SendSimpleMessage()
+{
+  // Create a message object
+  DiscordMessage message = new DiscordMessage(g_Discord);
+  
+  // Set the content and channel
+  message.SetContent("Hello from SourceMod!");
+  message.SetChannelId("123456789012345678");
+  
+  // Send the message
+  if (message.Send())
+  {
+    PrintToServer("Message sent successfully!");
+  }
+  else
+  {
+    PrintToServer("Failed to send message");
+  }
+  
+  delete message;
+}
+
+// Example 2: Create a message with embed
+void SendMessageWithEmbed()
+{
+  // Create message and embed objects
+  DiscordMessage message = new DiscordMessage(g_Discord);
+  DiscordEmbed embed = new DiscordEmbed();
+  
+  // Configure the embed
+  embed.SetTitle("Server Status");
+  embed.SetDescription("Current server information");
+  embed.SetColor(0x00FF00);
+  embed.AddField("Players", "15/32", true);
+  embed.AddField("Map", "de_dust2", true);
+  
+  // Add embed to message and set properties
+  message.AddEmbed(embed);
+  message.SetContent("Server status update:");
+  message.SetChannelId("123456789012345678");
+  
+  // Send the message
+  message.Send();
+  
+  delete embed;
+  delete message;
+}
+
+// Example 3: Create a message using Discord client methods
+void SendUsingDiscordClient()
+{
+  // Method 1: Send simple text message
+  g_Discord.SendMessage("123456789012345678", "Hello world!");
+  
+  // Method 2: Send message with embed using Discord client
+  DiscordEmbed embed = new DiscordEmbed();
+  embed.SetTitle("Notification");
+  embed.SetDescription("This is a notification message");
+  embed.SetColor(0xFF0000);
+  
+  g_Discord.SendMessageEmbed("123456789012345678", "Alert:", embed);
+  delete embed;
+  
+  // Method 3: Send using DiscordMessage object via Discord client
+  DiscordMessage message = new DiscordMessage(g_Discord);
+  message.SetContent("Message sent via Discord client");
+  message.SetChannelId("123456789012345678");
+  
+  g_Discord.SendDiscordMessage(message);
+  delete message;
+}
+
+// Example 4: Advanced message configuration
+void SendAdvancedMessage()
+{
+  DiscordMessage message = new DiscordMessage(g_Discord);
+  
+  // Set basic properties
+  message.SetContent("🎉 **Server Event Starting!** 🎉");
+  message.SetChannelId("123456789012345678");
+  message.SetNonce("unique-message-id-123");
+  
+  // Create multiple embeds
+  DiscordEmbed embed1 = new DiscordEmbed();
+  embed1.SetTitle("Event Details");
+  embed1.SetDescription("Join us for a special tournament!");
+  embed1.SetColor(0x00AA00);
+  embed1.AddField("Start Time", "2:00 PM EST", true);
+  embed1.AddField("Duration", "2 hours", true);
+  embed1.AddField("Prize", "$100", true);
+  
+  DiscordEmbed embed2 = new DiscordEmbed();
+  embed2.SetTitle("How to Join");
+  embed2.SetDescription("Use the `/join` command in-game");
+  embed2.SetColor(0x0000AA);
+  
+  // Add both embeds to the message
+  message.AddEmbed(embed1);
+  message.AddEmbed(embed2);
+  
+  // Send the message
+  if (message.Send())
+  {
+    PrintToServer("Advanced message sent successfully!");
+    
+    // Get the sent message ID for future reference
+    char messageId[32];
+    message.GetId(messageId, sizeof(messageId));
+    PrintToServer("Message ID: %s", messageId);
+  }
+  
+  delete embed1;
+  delete embed2;
+  delete message;
+}
+
+// Example 5: Message editing and management
+void EditExistingMessage()
+{
+  // Create message object from existing message ID
+  DiscordMessage message = new DiscordMessage(g_Discord, "987654321098765432", "123456789012345678");
+  
+  // Edit the message content
+  message.Edit("This message has been updated!");
+  
+  // Clear all embeds and add a new one
+  message.ClearEmbeds();
+  
+  DiscordEmbed newEmbed = new DiscordEmbed();
+  newEmbed.SetTitle("Updated");
+  newEmbed.SetDescription("This message was edited");
+  newEmbed.SetColor(0xFFAA00);
+  
+  message.AddEmbed(newEmbed);
+  message.Edit("Message updated with new embed!");
+  
+  delete newEmbed;
+  delete message;
+}
+
+// Example 6: Message with channel object
+void SendToChannel()
+{
+  // Create channel object
+  DiscordChannel channel = new DiscordChannel(g_Discord, "123456789012345678");
+  
+  // Method 1: Send simple message to channel
+  channel.SendMessage("Hello from channel!");
+  
+  // Method 2: Send message with embed to channel
+  DiscordEmbed embed = new DiscordEmbed();
+  embed.SetTitle("Channel Message");
+  embed.SetDescription("This message was sent using a channel object");
+  embed.SetColor(0x9900FF);
+  
+  channel.SendMessageEmbed("Channel notification:", embed);
+  delete embed;
+  
+  // Method 3: Send DiscordMessage object to channel
+  DiscordMessage message = new DiscordMessage(g_Discord);
+  message.SetContent("Message sent via channel object");
+  
+  channel.SendDiscordMessage(message);
+  
+  delete message;
+  delete channel;
+}
+
+// Example 7: Message reactions and management
+void ManageMessageReactions()
+{
+  // Create or get existing message
+  DiscordMessage message = new DiscordMessage(g_Discord, "MESSAGE_ID", "CHANNEL_ID");
+  
+  // Add various reactions
+  message.AddReaction("👍");
+  message.AddReaction("👎");
+  message.AddReaction("❤️");
+  message.AddReaction("🎉");
+  
+  // Pin the message
+  message.Pin();
+  
+  // Set up a timer to manage the message later
+  CreateTimer(30.0, Timer_RemoveReactions, message);
+}
+
+Action Timer_RemoveReactions(Handle timer, any messageHandle)
+{
+  DiscordMessage message = view_as<DiscordMessage>(messageHandle);
+  
+  // Remove specific reaction
+  message.RemoveReaction("👎");
+  
+  // Remove all reactions after another delay
+  CreateTimer(10.0, Timer_RemoveAllReactions, messageHandle);
+  
+  return Plugin_Continue;
+}
+
+Action Timer_RemoveAllReactions(Handle timer, any messageHandle)
+{
+  DiscordMessage message = view_as<DiscordMessage>(messageHandle);
+  
+  // Remove all reactions
+  message.RemoveAllReactions();
+  
+  // Unpin and delete the message
+  message.Unpin();
+  message.Delete();
+  
+  delete message;
+  return Plugin_Stop;
+}
+```
+
 ### Webhook Management with Static Methods Example
 ```cpp
 void WebhookManagement()
@@ -363,20 +600,14 @@ void WebhookManagement()
   delete webhook;
   
   // Method 2: Get complete webhook info asynchronously (recommended)
-  DiscordWebhook.GetWebhook(g_Discord, "860851945437790209", OnWebhookFetched, 0);
+  DiscordWebhook.FetchWebhook(g_Discord, "860851945437790209", OnWebhookFetched);
   
   // Method 3: Create a webhook using the API
-  DiscordWebhook.CreateWebhook(g_Discord, "CHANNEL_ID", "My Bot Webhook", OnWebhookCreated, 0);
+  DiscordWebhook.CreateWebhook(g_Discord, "CHANNEL_ID", "My Bot Webhook", OnWebhookCreated);
 }
 
 void OnWebhookFetched(Discord discord, DiscordWebhook webhook, any data)
 {
-  if (webhook == INVALID_HANDLE)
-  {
-    PrintToServer("Failed to get webhook information");
-    return;
-  }
-  
   char webhookId[64], webhookName[64];
   webhook.GetId(webhookId, sizeof(webhookId));
   webhook.GetName(webhookName, sizeof(webhookName));
@@ -385,13 +616,10 @@ void OnWebhookFetched(Discord discord, DiscordWebhook webhook, any data)
   
   // Get webhook creator information
   DiscordUser creator = webhook.User;
-  if (creator != INVALID_HANDLE)
-  {
-    char creatorName[64], creatorId[64];
-    creator.GetUserName(creatorName, sizeof(creatorName));  
-    creator.GetId(creatorId, sizeof(creatorId));
-    PrintToServer("Webhook created by: %s (ID: %s)", creatorName, creatorId);
-  }
+  char creatorName[64], creatorId[64];
+  creator.GetUserName(creatorName, sizeof(creatorName));  
+  creator.GetId(creatorId, sizeof(creatorId));
+  PrintToServer("Webhook created by: %s (ID: %s)", creatorName, creatorId);
   
   // Execute the webhook with a message
   webhook.Execute("Hello from the retrieved webhook!");
@@ -411,7 +639,7 @@ void OnWebhookCreated(Discord discord, DiscordWebhook webhook, any data)
   webhook.Execute("Hello from the newly created webhook!");
   
   // Get all webhooks in a channel
-  DiscordWebhook.GetChannelWebhooks(discord, "CHANNEL_ID", OnChannelWebhooksReceived, 0);
+  DiscordWebhook.GetChannelWebhooks(discord, "CHANNEL_ID", OnChannelWebhooksReceived);
   
   delete webhook;
 }
@@ -441,16 +669,12 @@ void AdvancedUserManagement()
   PrintToServer("User: %s (may be empty if not cached)", username);
   
   // Method 2: Fetch complete user info asynchronously (recommended)
-  DiscordUser.FetchUser(g_Discord, "192591975612940288", OnUserFetched, 0);
+  DiscordUser.FetchUser(g_Discord, "192591975612940288", OnUserFetched);
 }
 
 void OnUserFetched(Discord discord, DiscordUser user, any data)
 {
-  if (user == INVALID_HANDLE)
-  {
-    PrintToServer("Failed to fetch user information");
-    return;
-  }
+  PrintToServer("Failed to fetch user information");
   
   char username[64], userId[32];
   user.GetUserName(username, sizeof(username));
@@ -541,7 +765,7 @@ void AdvancedUserManagement_Old()
 
 ### Event Handling Example
 ```cpp
-public void Discord_OnMessage(Discord discord, DiscordMessage message)
+void OnDiscordMessage(Discord discord, DiscordMessage message, any data)
 {
   char content[512];
   message.GetContent(content, sizeof(content));
@@ -574,7 +798,7 @@ public void Discord_OnMessage(Discord discord, DiscordMessage message)
   }
 }
 
-public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction)
+void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any data)
 {
   char commandName[32];
   interaction.GetCommandName(commandName, sizeof(commandName));
@@ -639,7 +863,7 @@ public void Discord_OnSlashCommand(Discord discord, DiscordInteraction interacti
   }
 }
 
-public void Discord_OnAutocomplete(Discord discord, DiscordAutocompleteInteraction interaction)
+void OnDiscordAutocomplete(Discord discord, DiscordAutocompleteInteraction interaction, any data)
 {
   char commandName[32];
   interaction.GetCommandName(commandName, sizeof(commandName));

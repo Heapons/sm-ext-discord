@@ -30,11 +30,6 @@ DiscordSlashCommandHandler g_DiscordSlashCommandHandler;
 DiscordForumTagHandler g_DiscordForumTagHandler;
 DiscordGuildHandler g_DiscordGuildHandler;
 
-IForward* g_pForwardReady = nullptr;
-IForward* g_pForwardMessage = nullptr;
-IForward* g_pForwardError = nullptr;
-IForward* g_pForwardSlashCommand = nullptr;
-IForward* g_pForwardAutocomplete = nullptr;
 
 ThreadSafeQueue<std::function<void()>> g_TaskQueue;
 
@@ -68,12 +63,6 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	g_DiscordForumTagHandle = handlesys->CreateType("DiscordForumTag", &g_DiscordForumTagHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordGuildHandle = handlesys->CreateType("DiscordGuild", &g_DiscordGuildHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 
-	g_pForwardReady = forwards->CreateForward("Discord_OnReady", ET_Ignore, 1, nullptr, Param_Cell);
-	g_pForwardMessage = forwards->CreateForward("Discord_OnMessage", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
-	g_pForwardError = forwards->CreateForward("Discord_OnError", ET_Ignore, 2, nullptr, Param_Cell, Param_String);
-	g_pForwardSlashCommand = forwards->CreateForward("Discord_OnSlashCommand", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
-	g_pForwardAutocomplete = forwards->CreateForward("Discord_OnAutocomplete", ET_Ignore, 5, nullptr, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
-
 	smutils->AddGameFrameHook(&OnGameFrame);
 
 	return true;
@@ -81,13 +70,6 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 void DiscordExtension::SDK_OnUnload()
 {
-
-	forwards->ReleaseForward(g_pForwardReady);
-	forwards->ReleaseForward(g_pForwardMessage);
-	forwards->ReleaseForward(g_pForwardError);
-	forwards->ReleaseForward(g_pForwardSlashCommand);
-	forwards->ReleaseForward(g_pForwardAutocomplete);
-
 	handlesys->RemoveType(g_DiscordHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordUserHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordMessageHandle, myself->GetIdentity());

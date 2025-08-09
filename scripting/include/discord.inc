@@ -297,121 +297,121 @@ enum MessageType {
  * Guild flags enum - matches DPP guild_flags
  */
 enum GuildFlags {
-	GuildFlag_Large = (1 << 0),                    // Large guild
-	GuildFlag_Unavailable = (1 << 1),              // Unavailable due to outage
-	GuildFlag_WidgetEnabled = (1 << 2),            // Widget enabled
-	GuildFlag_InviteSplash = (1 << 3),             // Can have invite splash
-	GuildFlag_VipRegions = (1 << 4),               // Can have VIP regions
-	GuildFlag_VanityUrl = (1 << 5),                // Can have vanity URL
-	GuildFlag_Verified = (1 << 6),                 // Verified server
-	GuildFlag_Partnered = (1 << 7),                // Partnered server
-	GuildFlag_Community = (1 << 8),                // Community features enabled
-	GuildFlag_RoleSubscriptionEnabled = (1 << 9),  // Role subscriptions enabled
-	GuildFlag_News = (1 << 10),                    // Has news channels
-	GuildFlag_Discoverable = (1 << 11),            // Discoverable in discovery
-	GuildFlag_Featureable = (1 << 12),             // Featureable
-	GuildFlag_AnimatedIcon = (1 << 13),            // Can have animated icon
-	GuildFlag_Banner = (1 << 14),                  // Can have banner
-	GuildFlag_WelcomeScreenEnabled = (1 << 15),    // Has welcome screen
-	GuildFlag_MemberVerificationGate = (1 << 16),  // Has member verification
-	GuildFlag_PreviewEnabled = (1 << 17),          // Has preview enabled
-	GuildFlag_NoJoinNotifications = (1 << 18),     // Join notifications off
-	GuildFlag_NoBoostNotifications = (1 << 19),    // Boost notifications off
-	GuildFlag_HasAnimatedIcon = (1 << 20),         // Has animated icon
-	GuildFlag_HasAnimatedBanner = (1 << 21),       // Has animated banner
-	GuildFlag_NoSetupTips = (1 << 22),             // Setup tips off
-	GuildFlag_NoStickerGreeting = (1 << 23),       // Sticker greeting off
-	GuildFlag_MonetizationEnabled = (1 << 24),     // Monetization enabled
-	GuildFlag_MoreStickers = (1 << 25),            // More sticker slots
-	GuildFlag_CreatorStorePageEnabled = (1 << 26), // Creator store page enabled
-	GuildFlag_RoleIcons = (1 << 27),               // Can set role icons
-	GuildFlag_SevenDayThreadArchive = (1 << 28),   // Seven day thread archive (deprecated)
-	GuildFlag_ThreeDayThreadArchive = (1 << 29),   // Three day thread archive (deprecated)
-	GuildFlag_TicketedEvents = (1 << 30),          // Ticketed events enabled
-	GuildFlag_ChannelBanners = (1 << 31)           // Channel banners (deprecated)
+  GuildFlag_Large = (1 << 0),                    // Large guild
+  GuildFlag_Unavailable = (1 << 1),              // Unavailable due to outage
+  GuildFlag_WidgetEnabled = (1 << 2),            // Widget enabled
+  GuildFlag_InviteSplash = (1 << 3),             // Can have invite splash
+  GuildFlag_VipRegions = (1 << 4),               // Can have VIP regions
+  GuildFlag_VanityUrl = (1 << 5),                // Can have vanity URL
+  GuildFlag_Verified = (1 << 6),                 // Verified server
+  GuildFlag_Partnered = (1 << 7),                // Partnered server
+  GuildFlag_Community = (1 << 8),                // Community features enabled
+  GuildFlag_RoleSubscriptionEnabled = (1 << 9),  // Role subscriptions enabled
+  GuildFlag_News = (1 << 10),                    // Has news channels
+  GuildFlag_Discoverable = (1 << 11),            // Discoverable in discovery
+  GuildFlag_Featureable = (1 << 12),             // Featureable
+  GuildFlag_AnimatedIcon = (1 << 13),            // Can have animated icon
+  GuildFlag_Banner = (1 << 14),                  // Can have banner
+  GuildFlag_WelcomeScreenEnabled = (1 << 15),    // Has welcome screen
+  GuildFlag_MemberVerificationGate = (1 << 16),  // Has member verification
+  GuildFlag_PreviewEnabled = (1 << 17),          // Has preview enabled
+  GuildFlag_NoJoinNotifications = (1 << 18),     // Join notifications off
+  GuildFlag_NoBoostNotifications = (1 << 19),    // Boost notifications off
+  GuildFlag_HasAnimatedIcon = (1 << 20),         // Has animated icon
+  GuildFlag_HasAnimatedBanner = (1 << 21),       // Has animated banner
+  GuildFlag_NoSetupTips = (1 << 22),             // Setup tips off
+  GuildFlag_NoStickerGreeting = (1 << 23),       // Sticker greeting off
+  GuildFlag_MonetizationEnabled = (1 << 24),     // Monetization enabled
+  GuildFlag_MoreStickers = (1 << 25),            // More sticker slots
+  GuildFlag_CreatorStorePageEnabled = (1 << 26), // Creator store page enabled
+  GuildFlag_RoleIcons = (1 << 27),               // Can set role icons
+  GuildFlag_SevenDayThreadArchive = (1 << 28),   // Seven day thread archive (deprecated)
+  GuildFlag_ThreeDayThreadArchive = (1 << 29),   // Three day thread archive (deprecated)
+  GuildFlag_TicketedEvents = (1 << 30),          // Ticketed events enabled
+  GuildFlag_ChannelBanners = (1 << 31)           // Channel banners (deprecated)
 };
 
 /**
  * Additional guild flags enum - matches DPP guild_flags_extra
  */
 enum GuildFlagsExtra {
-	GuildFlagExtra_PremiumProgressBarEnabled = (1 << 0),             // Premium progress bar enabled
-	GuildFlagExtra_AnimatedBanner = (1 << 1),                        // Can have animated banner
-	GuildFlagExtra_AutoModeration = (1 << 2),                        // Auto moderation enabled
-	GuildFlagExtra_InvitesDisabled = (1 << 3),                       // Invites disabled
-	GuildFlagExtra_DeveloperSupportServer = (1 << 4),                // Developer support server
-	GuildFlagExtra_NoRoleSubscriptionNotifications = (1 << 5),       // Role subscription notifications off
-	GuildFlagExtra_NoRoleSubscriptionNotificationReplies = (1 << 6), // Role subscription notification replies off
-	GuildFlagExtra_RoleSubscriptionsAvailableForPurchase = (1 << 7), // Role subscriptions available for purchase
-	GuildFlagExtra_RaidAlertsDisabled = (1 << 8)                     // Raid alerts disabled
+  GuildFlagExtra_PremiumProgressBarEnabled = (1 << 0),             // Premium progress bar enabled
+  GuildFlagExtra_AnimatedBanner = (1 << 1),                        // Can have animated banner
+  GuildFlagExtra_AutoModeration = (1 << 2),                        // Auto moderation enabled
+  GuildFlagExtra_InvitesDisabled = (1 << 3),                       // Invites disabled
+  GuildFlagExtra_DeveloperSupportServer = (1 << 4),                // Developer support server
+  GuildFlagExtra_NoRoleSubscriptionNotifications = (1 << 5),       // Role subscription notifications off
+  GuildFlagExtra_NoRoleSubscriptionNotificationReplies = (1 << 6), // Role subscription notification replies off
+  GuildFlagExtra_RoleSubscriptionsAvailableForPurchase = (1 << 7), // Role subscriptions available for purchase
+  GuildFlagExtra_RaidAlertsDisabled = (1 << 8)                     // Raid alerts disabled
 };
 
 /**
  * Guild verification levels
  */
 enum GuildVerificationLevel {
-	GuildVerification_None = 0,    // Unrestricted
-	GuildVerification_Low = 1,     // Must have verified email
-	GuildVerification_Medium = 2,  // Must be registered for 5+ minutes
-	GuildVerification_High = 3,    // Must be member for 10+ minutes
-	GuildVerification_VeryHigh = 4 // Must have verified phone
+  GuildVerification_None = 0,    // Unrestricted
+  GuildVerification_Low = 1,     // Must have verified email
+  GuildVerification_Medium = 2,  // Must be registered for 5+ minutes
+  GuildVerification_High = 3,    // Must be member for 10+ minutes
+  GuildVerification_VeryHigh = 4 // Must have verified phone
 };
 
 /**
  * Guild explicit content filter levels
  */
 enum GuildExplicitContentFilter {
-	GuildExplicitContent_Disabled = 0,            // No scanning
-	GuildExplicitContent_MembersWithoutRoles = 1, // Scan members without roles
-	GuildExplicitContent_AllMembers = 2           // Scan all members
+  GuildExplicitContent_Disabled = 0,            // No scanning
+  GuildExplicitContent_MembersWithoutRoles = 1, // Scan members without roles
+  GuildExplicitContent_AllMembers = 2           // Scan all members
 };
 
 /**
  * Guild MFA levels
  */
 enum GuildMfaLevel {
-	GuildMfa_None = 0,    // MFA not required
-	GuildMfa_Elevated = 1 // MFA required for moderation actions
+  GuildMfa_None = 0,    // MFA not required
+  GuildMfa_Elevated = 1 // MFA required for moderation actions
 };
 
 /**
  * Guild NSFW levels
  */
 enum GuildNsfwLevel {
-	GuildNsfw_Default = 0,      // Default setting
-	GuildNsfw_Explicit = 1,     // Explicit content may be present
-	GuildNsfw_Safe = 2,         // Safe for work content only
-	GuildNsfw_AgeRestricted = 3 // Age restricted (18+)
+  GuildNsfw_Default = 0,      // Default setting
+  GuildNsfw_Explicit = 1,     // Explicit content may be present
+  GuildNsfw_Safe = 2,         // Safe for work content only
+  GuildNsfw_AgeRestricted = 3 // Age restricted (18+)
 };
 
 /**
  * Guild premium tiers (boost levels)
  */
 enum GuildPremiumTier {
-	GuildPremium_None = 0,  // No boosts
-	GuildPremium_Tier1 = 1, // Tier 1 perks
-	GuildPremium_Tier2 = 2, // Tier 2 perks  
-	GuildPremium_Tier3 = 3  // Tier 3 perks
+  GuildPremium_None = 0,  // No boosts
+  GuildPremium_Tier1 = 1, // Tier 1 perks
+  GuildPremium_Tier2 = 2, // Tier 2 perks  
+  GuildPremium_Tier3 = 3  // Tier 3 perks
 };
 
 /**
  * Guild default message notification levels
  */
 enum GuildDefaultMessageNotifications {
-	GuildNotifications_AllMessages = 0, // All messages
-	GuildNotifications_OnlyMentions = 1 // Only @mentions
+  GuildNotifications_AllMessages = 0, // All messages
+  GuildNotifications_OnlyMentions = 1 // Only @mentions
 };
 
 /**
  * Guild AFK timeout values (in seconds)
  */
 enum GuildAfkTimeout {
-	GuildAfk_Off = 0,     // Disabled
-	GuildAfk_60 = 60,     // 1 minute
-	GuildAfk_300 = 300,   // 5 minutes
-	GuildAfk_900 = 900,   // 15 minutes
-	GuildAfk_1800 = 1800, // 30 minutes
-	GuildAfk_3600 = 3600  // 1 hour
+  GuildAfk_Off = 0,     // Disabled
+  GuildAfk_60 = 60,     // 1 minute
+  GuildAfk_300 = 300,   // 5 minutes
+  GuildAfk_900 = 900,   // 15 minutes
+  GuildAfk_1800 = 1800, // 30 minutes
+  GuildAfk_3600 = 3600  // 1 hour
 };
 
 /**
@@ -420,29 +420,36 @@ enum GuildAfkTimeout {
  * Reference: https://discord.com/developers/docs/topics/gateway#list-of-intents
  */
 enum DiscordIntents {
-	Intent_Guilds = (1 << 0),                       // Guild create/update/delete, role create/update/delete, channel create/update/delete
-	Intent_GuildMembers = (1 << 1),                 // Guild member add/update/remove (PRIVILEGED)
-	Intent_GuildBans = (1 << 2),                    // Guild ban add/remove
-	Intent_GuildEmojis = (1 << 3),                  // Guild emoji/sticker create/update/delete
-	Intent_GuildIntegrations = (1 << 4),            // Guild integration create/update/delete
-	Intent_GuildWebhooks = (1 << 5),                // Guild webhook create/update/delete
-	Intent_GuildInvites = (1 << 6),                 // Guild invite create/delete
-	Intent_GuildVoiceStates = (1 << 7),             // Guild voice state update
-	Intent_GuildPresences = (1 << 8),               // Guild presence update (PRIVILEGED)
-	Intent_GuildMessages = (1 << 9),                // Guild message create/update/delete
-	Intent_GuildMessageReactions = (1 << 10),       // Guild message reaction add/remove/clear
-	Intent_GuildMessageTyping = (1 << 11),          // Guild typing start
-	Intent_DirectMessages = (1 << 12),              // DM message create/update/delete
-	Intent_DirectMessageReactions = (1 << 13),      // DM message reaction add/remove/clear
-	Intent_DirectMessageTyping = (1 << 14),         // DM typing start
-	Intent_MessageContent = (1 << 15),              // Message content access (PRIVILEGED)
-	Intent_GuildScheduledEvents = (1 << 16),        // Guild scheduled event create/update/delete
-	Intent_AutoModerationConfiguration = (1 << 20), // Auto moderation rule create/update/delete
-	Intent_AutoModerationExecution = (1 << 21)      // Auto moderation action execution
+  Intent_Guilds = (1 << 0),                       // Guild create/update/delete, role create/update/delete, channel create/update/delete
+  Intent_GuildMembers = (1 << 1),                 // Guild member add/update/remove (PRIVILEGED)
+  Intent_GuildBans = (1 << 2),                    // Guild ban add/remove
+  Intent_GuildEmojis = (1 << 3),                  // Guild emoji/sticker create/update/delete
+  Intent_GuildIntegrations = (1 << 4),            // Guild integration create/update/delete
+  Intent_GuildWebhooks = (1 << 5),                // Guild webhook create/update/delete
+  Intent_GuildInvites = (1 << 6),                 // Guild invite create/delete
+  Intent_GuildVoiceStates = (1 << 7),             // Guild voice state update
+  Intent_GuildPresences = (1 << 8),               // Guild presence update (PRIVILEGED)
+  Intent_GuildMessages = (1 << 9),                // Guild message create/update/delete
+  Intent_GuildMessageReactions = (1 << 10),       // Guild message reaction add/remove/clear
+  Intent_GuildMessageTyping = (1 << 11),          // Guild typing start
+  Intent_DirectMessages = (1 << 12),              // DM message create/update/delete
+  Intent_DirectMessageReactions = (1 << 13),      // DM message reaction add/remove/clear
+  Intent_DirectMessageTyping = (1 << 14),         // DM typing start
+  Intent_MessageContent = (1 << 15),              // Message content access (PRIVILEGED)
+  Intent_GuildScheduledEvents = (1 << 16),        // Guild scheduled event create/update/delete
+  Intent_AutoModerationConfiguration = (1 << 20), // Auto moderation rule create/update/delete
+  Intent_AutoModerationExecution = (1 << 21)      // Auto moderation action execution
 };
 
 // Pre-defined intent combinations
-#define DISCORD_INTENTS_DEFAULT (Intent_Guilds |Intent_GuildBans | Intent_GuildEmojis | Intent_GuildIntegrations | Intent_GuildWebhooks | Intent_GuildInvites | Intent_GuildVoiceStates | Intent_GuildMessages | Intent_GuildMessageReactions | Intent_GuildMessageTyping | Intent_DirectMessages | Intent_DirectMessageTyping | Intent_DirectMessageReactions | Intent_GuildScheduledEvents | Intent_AutoModerationConfiguration | Intent_AutoModerationExecution)
+#define DISCORD_INTENTS_DEFAULT                                               \
+  (Intent_Guilds | Intent_GuildBans | Intent_GuildEmojis |                    \
+  Intent_GuildIntegrations | Intent_GuildWebhooks | Intent_GuildInvites |     \
+  Intent_GuildVoiceStates | Intent_GuildMessages |                            \
+  Intent_GuildMessageReactions | Intent_GuildMessageTyping |                  \
+  Intent_DirectMessages | Intent_DirectMessageTyping |                        \
+  Intent_DirectMessageReactions | Intent_GuildScheduledEvents |               \
+  Intent_AutoModerationConfiguration | Intent_AutoModerationExecution)
 #define DISCORD_INTENTS_PRIVILEGED (Intent_GuildMembers | Intent_GuildPresences | Intent_MessageContent)
 #define DISCORD_INTENTS_ALL (DISCORD_INTENTS_DEFAULT | DISCORD_INTENTS_PRIVILEGED)
 #define DISCORD_INTENTS_UNVERIFIED_DEFAULT (DISCORD_INTENTS_DEFAULT | Intent_MessageContent)
@@ -566,6 +573,32 @@ typeset GetMessageCallback
   function void (Discord discord, DiscordMessage message, any data);
 };
 
+// Callback types for various Discord events
+typeset DiscordReadyCallback
+{
+  function void (Discord discord, any data);
+};
+
+typeset DiscordMessageCallback
+{
+  function void (Discord discord, DiscordMessage message, any data);
+};
+
+typeset DiscordErrorCallback
+{
+  function void (Discord discord, const char[] error, any data);
+};
+
+typeset DiscordSlashCommandCallback
+{
+  function void (Discord discord, DiscordInteraction interaction, any data);
+};
+
+typeset DiscordAutocompleteCallback
+{
+  function void (Discord discord, DiscordAutocompleteInteraction interaction, bool focused, DiscordCommandOptionType type, const char[] name, any data);
+};
+
 /**
  * Discord bot client handle
  */
@@ -636,9 +669,11 @@ methodmap Discord < Handle {
    *
    * @param buffer    Buffer to store the discriminator
    * @param maxlen    Maximum length of the buffer
-   * @return         True if successful, false otherwise
+   * @return          True if successful, false otherwise
    */
-  public native bool GetBotDiscriminator(char[] buffer, int maxlen);
+  property int BotDiscriminator {
+    public native get();
+  }
 
   /**
    * Gets the bot's avatar URL
@@ -678,6 +713,25 @@ methodmap Discord < Handle {
    * @return          true on success, false on failure
    */
   public native bool SendMessageEmbed(const char[] channelId, const char[] message, DiscordEmbed embed, int allowedMentionsMask = 0, const char[][] allowedUsersMentions = {}, int allowedUserSize = 0, const char[][] allowedRolesMentions = {}, int allowedRolesSize = 0);
+
+  /**
+   * Sends a DiscordMessage object
+   *
+   * @param message   DiscordMessage object to send
+   * @return          true on success, false on failure
+   * @note            The message must have a channel ID set
+   */
+  public native bool SendDiscordMessage(DiscordMessage message);
+
+  /**
+   * Sends a DiscordMessage object to a specific channel
+   *
+   * @param channelId Target channel ID
+   * @param message   DiscordMessage object to send
+   * @return          true on success, false on failure
+   * @note            This will override the channel ID in the message object
+   */
+  public native bool SendDiscordMessageToChannel(const char[] channelId, DiscordMessage message);
 
   /**
    * Edits an existing message
@@ -740,6 +794,46 @@ methodmap Discord < Handle {
    * @return             true on success, false on failure
    */
   public native bool BulkDeleteGlobalCommands();
+
+  /**
+   * Sets the Ready callback for this bot instance
+   *
+   * @param callback   Callback function to call when bot is ready
+   * @param data       Optional data to pass to callback
+   */
+  public native void SetReadyCallback(DiscordReadyCallback callback, any data = 0);
+
+  /**
+   * Sets the Message callback for this bot instance
+   *
+   * @param callback   Callback function to call when message is received
+   * @param data       Optional data to pass to callback
+   */
+  public native void SetMessageCallback(DiscordMessageCallback callback, any data = 0);
+
+  /**
+   * Sets the Error callback for this bot instance
+   *
+   * @param callback   Callback function to call when error occurs
+   * @param data       Optional data to pass to callback
+   */
+  public native void SetErrorCallback(DiscordErrorCallback callback, any data = 0);
+
+  /**
+   * Sets the Slash Command callback for this bot instance
+   *
+   * @param callback   Callback function to call when slash command is used
+   * @param data       Optional data to pass to callback
+   */
+  public native void SetSlashCommandCallback(DiscordSlashCommandCallback callback, any data = 0);
+
+  /**
+   * Sets the Autocomplete callback for this bot instance
+   *
+   * @param callback   Callback function to call when autocomplete is requested
+   * @param data       Optional data to pass to callback
+   */
+  public native void SetAutocompleteCallback(DiscordAutocompleteCallback callback, any data = 0);
 }
 
 /**
@@ -763,6 +857,7 @@ methodmap DiscordUser < Handle
    *
    * @param discord     Discord client handle
    * @param userId      User ID as string
+   * @param guildId     Guild ID as string (optional, for member info)
    * @param callback    Function to call when user info is received
    * @param data        Optional data to pass to callback
    * @return            true if request was sent, false on failure
@@ -770,8 +865,10 @@ methodmap DiscordUser < Handle
    * @note              Limited information: MFA status and email verification are not available
    *                    to bots due to Discord privacy restrictions. Flags = 0 is normal for
    *                    regular users without special Discord badges.
+   * @note              This method first checks the cache for user data. If found in cache,
+   *                    the callback is called immediately. If not cached, an API request is made.
    */
-  public static native bool FetchUser(Discord discord, const char[] userId, GetUserCallback callback, any data = 0);
+  public static native bool FetchUser(Discord discord, const char[] userId, const char[] guildId = "", GetUserCallback callback, any data = 0);
 
   /**
    * Gets the ID of the user
@@ -870,10 +967,7 @@ methodmap DiscordUser < Handle
    * @param flag          Flag to check from DiscordUserFlags enum
    * @return              true if user has the flag, false otherwise
    */
-  public bool HasFlag(DiscordUserFlags flag)
-  {
-    return (view_as<int>(this.Flags) & view_as<int>(flag)) != 0;
-  }
+  public native bool HasFlag(DiscordUserFlags flag);
 
   /**
    * Checks if the user is a system user (Clyde)
@@ -1255,6 +1349,8 @@ methodmap DiscordGuild < Handle
    * @param callback     Callback function to handle the response
    * @param data         Additional data to pass to callback
    * @return             true on success, false on failure
+   * @note               This method first checks the cache for guild data. If found in cache,
+   *                     the callback is called immediately. If not cached, an API request is made.
    */
   public static native bool FetchGuild(Discord discord, const char[] guild_id, GetGuildCallback callback, any data = 0);
 
@@ -1507,8 +1603,6 @@ methodmap DiscordGuild < Handle
    */
   public native void GetSafetyAlertsChannelId(char[] buffer, int maxlength);
 
-  // Additional guild feature flags
-  
   /**
    * Checks if the guild is unavailable due to outage
    */
@@ -2165,6 +2259,52 @@ methodmap DiscordMessage < Handle
    * @note              This creates a minimal message object. Use FetchMessage for complete info.
    */
   public native DiscordMessage(Discord discord, const char[] messageId, const char[] channelId);
+
+  /**
+   * Creates an empty DiscordMessage object
+   *
+   * @param discord     Discord client handle to bind to this message
+   * @return            DiscordMessage handle or INVALID_HANDLE on failure
+   */
+  public static native DiscordMessage CreateEmpty(Discord discord);
+
+  /**
+   * Creates a DiscordMessage object with content
+   *
+   * @param discord     Discord client handle
+   * @param content     Message content
+   * @return            DiscordMessage handle or INVALID_HANDLE on failure
+   */
+  public static native DiscordMessage CreateWithContent(Discord discord, const char[] content);
+
+  /**
+   * Creates a DiscordMessage object with channel and content
+   *
+   * @param discord     Discord client handle
+   * @param channelId   Channel ID as string
+   * @param content     Message content
+   * @return            DiscordMessage handle or INVALID_HANDLE on failure
+   */
+  public static native DiscordMessage CreateWithChannel(Discord discord, const char[] channelId, const char[] content);
+
+  /**
+   * Creates a DiscordMessage object with an embed
+   *
+   * @param discord     Discord client handle
+   * @param embed       DiscordEmbed handle
+   * @return            DiscordMessage handle or INVALID_HANDLE on failure
+   */
+  public static native DiscordMessage CreateWithEmbed(Discord discord, DiscordEmbed embed);
+
+  /**
+   * Creates a DiscordMessage object with channel and embed
+   *
+   * @param discord     Discord client handle
+   * @param channelId   Channel ID as string
+   * @param embed       DiscordEmbed handle
+   * @return            DiscordMessage handle or INVALID_HANDLE on failure
+   */
+  public static native DiscordMessage CreateWithChannelEmbed(Discord discord, const char[] channelId, DiscordEmbed embed);
   
   /**
    * Fetches full message information from Discord API asynchronously
@@ -2176,6 +2316,8 @@ methodmap DiscordMessage < Handle
    * @param data        Optional data to pass to callback
    * @return            true if request was sent, false on failure
    * @note              Available information: content, author, timestamp, embeds, reactions, etc.
+   * @note              This method makes an API request to fetch message data. Messages are not cached
+   *                    by the Discord library due to memory constraints and privacy considerations.
    */
   public static native bool FetchMessage(Discord discord, const char[] messageId, const char[] channelId, GetMessageCallback callback, any data = 0);
 
@@ -2237,12 +2379,13 @@ methodmap DiscordMessage < Handle
   }
 
   /**
-   * Checks if the message is TTS (Text-To-Speech)
+   * Checks or set the message is TTS (Text-To-Speech)
    *
    * @return          true if TTS, false otherwise
    */
   property bool IsTTS {
     public native get();
+    public native set(bool tts)
   }
 
   /**
@@ -2273,8 +2416,14 @@ methodmap DiscordMessage < Handle
     public native get();
   }
 
+  /**
+   * Get or set message type
+   * 
+   * @return          Message type
+   */
   property MessageType Type {
     public native get();
+    public native set(MessageType Type);
   }
 
   /**
@@ -2340,10 +2489,11 @@ methodmap DiscordMessage < Handle
   
   // Message flag properties
   /**
-   * Gets the message flags
+   * Gets or set the message flags
    */
   property MessageFlags Flags {
     public native get();
+    public native set(MessageFlags Flags);
   }
   
   /**
@@ -2436,12 +2586,6 @@ methodmap DiscordMessage < Handle
   property bool IsUsingComponentsV2 {
     public native get();
   }
-  
-  // Additional message properties
-  /**
-   * Gets the webhook ID if message was sent by webhook
-   */
-  public native void GetWebhookId(char[] buffer, int maxlength);
   
   /**
    * Gets when this message was sent (timestamp)
@@ -2554,6 +2698,51 @@ methodmap DiscordMessage < Handle
    * Gets mentioned role ID by index
    */
   public native void GetMentionedRoleId(int index, char[] buffer, int maxlength);
+
+  /**
+   * Gets the webhook ID if message was sent by webhook
+   */
+  public native void GetWebhookId(char[] buffer, int maxlength);
+
+  /**
+   * Sets the message content
+   *
+   * @param content     New message content
+   */
+  public native void SetContent(const char[] content);
+
+  /**
+   * Sets the channel ID for this message
+   *
+   * @param channelId   Channel ID as string
+   */
+  public native void SetChannelId(const char[] channelId);
+
+  /**
+   * Sets the nonce for message validation
+   *
+   * @param nonce       Nonce string
+   */
+  public native void SetNonce(const char[] nonce);
+
+  /**
+   * Adds an embed to this message
+   *
+   * @param embed       DiscordEmbed handle to add
+   */
+  public native void AddEmbed(DiscordEmbed embed);
+
+  /**
+   * Clears all embeds from this message
+   */
+  public native void ClearEmbeds();
+
+  /**
+   * Sends this message to its channel
+   *
+   * @return           true on success, false on failure
+   */
+  public native bool Send();
   
   /**
    * Creates a reply to this message
@@ -2601,6 +2790,8 @@ methodmap DiscordChannel < Handle
    * @return            true if request was sent, false on failure
    * @note              Callback signature: void MyCallback(Discord discord, DiscordChannel channel, any data)
    * @note              Available information: name, type, topic, permissions, parent category, etc.
+   * @note              This method first checks the cache for channel data. If found in cache,
+   *                    the callback is called immediately. If not cached, an API request is made.
    */
   public static native bool FetchChannel(Discord discord, const char[] channelId, GetChannelCallback callback, any data = 0);
 
@@ -2784,7 +2975,7 @@ methodmap DiscordChannel < Handle
   /**
    * Gets the channel flags
    */
-  property int Flags {
+  property ChannelFlags Flags {
     public native get();
   }
   
@@ -2963,6 +3154,15 @@ methodmap DiscordChannel < Handle
    * Sends a message with embed to the channel
    */
   public native bool SendMessageEmbed(const char[] content, DiscordEmbed embed);
+
+  /**
+   * Sends a DiscordMessage object to this channel
+   *
+   * @param message   DiscordMessage object to send
+   * @return          true on success, false on failure
+   * @note            This will set the channel ID in the message object to this channel
+   */
+  public native bool SendDiscordMessage(DiscordMessage message);
   
   /**
    * Gets the icon URL for group DM channels
@@ -3183,6 +3383,18 @@ methodmap DiscordWebhook < Handle
    */
   public static native DiscordWebhook CreateFromIdToken(const char[] webhookId, const char[] webhookToken);
 
+  /**
+   * Fetches full webhook information from Discord API asynchronously
+   *
+   * @param discord     Discord client handle
+   * @param webhookId   Webhook ID
+   * @param callback    Function to call when webhook info is received
+   * @param data        Optional data to pass to callback
+   * @return            DiscordWebhook handle with complete info, or INVALID_HANDLE on failure
+   * @note              This method first checks the cache for webhook data. If found in cache,
+   *                    the handle is returned immediately. If not cached, an API request is made.
+   */
+  public static native bool FetchWebhook(Discord discord, const char[] webhookId, GetWebhookCallback callback, any data = 0);
 
   /**
    * Gets the ID of the webhook
@@ -3211,7 +3423,7 @@ methodmap DiscordWebhook < Handle
   /**
    * Sets the name of the webhook
    *
-   * @param name		New string to set the name to
+   * @param name    New string to set the name to
    */
   public native void SetName(char[] name);
 
@@ -3226,7 +3438,7 @@ methodmap DiscordWebhook < Handle
   /**
    * Sets the avatar_url of the webhook
    *
-   * @param name		New string to set the avatar_url to
+   * @param name    New string to set the avatar_url to
    */
   public native void SetAvatarUrl(char[] avatarUrl);
 
@@ -3241,19 +3453,19 @@ methodmap DiscordWebhook < Handle
   /**
    * Sets the avatar of the webhook
    *
-   * @param name		New string to set the avatar to
+   * @param name    New string to set the avatar to
    */
   public native void SetAvatarData(char[] avatar);
 
   /**
-   * Gets or sets the webhook type (read-only)
+   * Gets the webhook type
    */
   property DiscordWebhookType Type {
     public native get();
   }
 
   /**
-   * Gets the guild ID of the webhook (read-only)
+   * Gets the guild ID of the webhook
    *
    * @param buffer      Buffer to store the guild ID
    * @param maxlength   Maximum length of the buffer
@@ -3261,7 +3473,7 @@ methodmap DiscordWebhook < Handle
   public native void GetGuildId(char[] buffer, int maxlength);
 
   /**
-   * Gets the channel ID of the webhook (read-only)
+   * Gets the channel ID of the webhook
    *
    * @param buffer      Buffer to store the channel ID
    * @param maxlength   Maximum length of the buffer
@@ -3269,7 +3481,7 @@ methodmap DiscordWebhook < Handle
   public native void GetChannelId(char[] buffer, int maxlength);
 
   /**
-   * Gets the token of the webhook (read-only)
+   * Gets the token of the webhook
    *
    * @param buffer      Buffer to store the token
    * @param maxlength   Maximum length of the buffer
@@ -3277,7 +3489,7 @@ methodmap DiscordWebhook < Handle
   public native void GetToken(char[] buffer, int maxlength);
 
   /**
-   * Gets the application ID of the webhook (read-only)
+   * Gets the application ID of the webhook
    *
    * @param buffer      Buffer to store the application ID
    * @param maxlength   Maximum length of the buffer
@@ -3285,7 +3497,7 @@ methodmap DiscordWebhook < Handle
   public native void GetApplicationId(char[] buffer, int maxlength);
 
   /**
-   * Gets the source guild ID of the webhook (read-only, for channel follower webhooks)
+   * Gets the source guild ID of the webhook (for channel follower webhooks)
    *
    * @param buffer      Buffer to store the source guild ID
    * @param maxlength   Maximum length of the buffer
@@ -3293,7 +3505,7 @@ methodmap DiscordWebhook < Handle
   public native void GetSourceGuildId(char[] buffer, int maxlength);
 
   /**
-   * Gets the source channel ID of the webhook (read-only, for channel follower webhooks)
+   * Gets the source channel ID of the webhook (for channel follower webhooks)
    *
    * @param buffer      Buffer to store the source channel ID
    * @param maxlength   Maximum length of the buffer
@@ -3368,17 +3580,6 @@ methodmap DiscordWebhook < Handle
    * @return            true on success, false on failure
    */
   public static native bool CreateWebhook(Discord discord, const char[] channelId, const char[] name, CreateWebhookCallback callback, any data = 0);
-
-  /**
-   * Gets a webhook by its ID (Static method)
-   *
-   * @param discord     Discord client handle
-   * @param webhookId   Target webhook ID
-   * @param callback    Method to run on success
-   * @param data        Arbitrary value to pass to the callback
-   * @return            true on success, false on failure
-   */
-  public static native bool GetWebhook(Discord discord, const char[] webhookId, GetWebhookCallback callback, any data = 0);
 
   /**
    * Gets all webhooks assigned to a channel (Static method)
@@ -3462,13 +3663,6 @@ methodmap DiscordEmbed < Handle
    * @param url       Image URL
    */
   public native void SetImage(const char[] url);
-
-  /**
-   * Sets the embed timestamp (Unix timestamp)
-   *
-   * @param timestamp Unix timestamp to show in the footer
-   */
-  public native void SetTimestamp(int timestamp);
 
   /**
    * Sets the embed video URL
@@ -4013,7 +4207,7 @@ methodmap DiscordAutocompleteInteraction < Handle
   /**
    * Adds a choice to the autocomplete results that will be included in the response.
    *
-   * @param name   	The name that will appear to the user for this autocomplete result
+   * @param name    The name that will appear to the user for this autocomplete result
    * @param type    The option type of the value to be passed
    * @param value   The actual value that will be used in the option when it is sent
    */
@@ -4032,49 +4226,6 @@ methodmap DiscordAutocompleteInteraction < Handle
   */
   public native void CreateAutocompleteResponse();
 }
-
-/**
- * Called when Discord bot is ready
- *
- * @param discord        Discord client handle
- */
-forward void Discord_OnReady(Discord discord);
-
-/**
- * Called when a message is received
- *
- * @param discord        Discord client handle
- * @param message        Message handle
- */
-forward void Discord_OnMessage(Discord discord, DiscordMessage message);
-
-/**
- * Called when a slash command is received
- *
- * @param discord        Discord client handle
- * @param interaction    Interaction handle
- */
-forward void Discord_OnSlashCommand(Discord discord, DiscordInteraction interaction);
-
-/**
- * Called when an autocomplete request for a specific option is received
- *
- * @note Discord requires this forward to give back a response for one of the options within 500ms.
- * @param discord        Discord client handle
- * @param interaction    Autocomplete Interaction handle
- * @param focused        If the current option is the one focused by the user
- * @param type           The current option type
- * @param optionName     The name of the current option
- */
-forward void Discord_OnAutocomplete(Discord discord, DiscordAutocompleteInteraction interaction, bool focused, DiscordCommandOptionType type, char[] optionName);
-
-/**
- * Called when an error occurs
- *
- * @param discord        Discord client handle
- * @param error          Error message
- */
-forward void Discord_OnError(Discord discord, const char[] error);
 
 public Extension __ext_discord = 
 {

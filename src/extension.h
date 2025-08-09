@@ -85,12 +85,6 @@ public:
 extern DiscordExtension g_DiscordExt;
 extern ThreadSafeQueue<std::function<void()>> g_TaskQueue;
 
-extern IForward* g_pForwardReady;
-extern IForward* g_pForwardMessage;
-extern IForward* g_pForwardError;
-extern IForward* g_pForwardSlashCommand;
-extern IForward* g_pForwardAutocomplete;
-
 extern HandleType_t
   g_DiscordHandle,
   g_DiscordUserHandle,
