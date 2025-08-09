@@ -64,16 +64,40 @@ public:
 	void OnHandleDestroy(HandleType_t type, void* object);
 };
 
+class DiscordSlashCommandHandler : public IHandleTypeDispatch
+{
+public:
+	void OnHandleDestroy(HandleType_t type, void* object);
+};
+
+class DiscordForumTagHandler : public IHandleTypeDispatch
+{
+public:
+	void OnHandleDestroy(HandleType_t type, void* object);
+};
+
+class DiscordGuildHandler : public IHandleTypeDispatch
+{
+public:
+	void OnHandleDestroy(HandleType_t type, void* object);
+};
+
 extern DiscordExtension g_DiscordExt;
 extern ThreadSafeQueue<std::function<void()>> g_TaskQueue;
 
-extern IForward* g_pForwardReady;
-extern IForward* g_pForwardMessage;
-extern IForward* g_pForwardError;
-extern IForward* g_pForwardSlashCommand;
-extern IForward* g_pForwardAutocomplete;
+extern HandleType_t
+  g_DiscordHandle,
+  g_DiscordUserHandle,
+  g_DiscordMessageHandle,
+  g_DiscordChannelHandle,
+  g_DiscordWebhookHandle,
+  g_DiscordEmbedHandle,
+  g_DiscordInteractionHandle,
+  g_DiscordAutocompleteInteractionHandle,
+  g_DiscordSlashCommandHandle,
+  g_DiscordForumTagHandle,
+  g_DiscordGuildHandle;
 
-extern HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle, g_DiscordAutocompleteInteractionHandle;
 extern DiscordHandler g_DiscordHandler;
 extern DiscordUserHandler g_DiscordUserHandler;
 extern DiscordMessageHandler g_DiscordMessageHandler;
@@ -82,6 +106,9 @@ extern DiscordWebhookHandler g_DiscordWebhookHandler;
 extern DiscordEmbedHandler g_DiscordEmbedHandler;
 extern DiscordInteractionHandler g_DiscordInteractionHandler;
 extern DiscordAutocompleteInteractionHandler g_DiscordAutocompleteInteractionHandler;
+extern DiscordSlashCommandHandler g_DiscordSlashCommandHandler;
+extern DiscordForumTagHandler g_DiscordForumTagHandler;
+extern DiscordGuildHandler g_DiscordGuildHandler;
 
 extern const sp_nativeinfo_t discord_natives[];
 
