@@ -260,7 +260,7 @@ public:
 	}
 	
 	~DiscordMessage() {
-		if (m_authorHandle != BAD_HANDLE) {
+		if (m_authorHandle) {
 			handlesys->FreeHandle(m_authorHandle, nullptr);
 		}
 	}
@@ -559,7 +559,7 @@ public:
 	}
 	
 	~DiscordWebhook() {
-		if (m_userHandle != BAD_HANDLE) {
+		if (m_userHandle) {
 			handlesys->FreeHandle(m_userHandle, nullptr);
 		}
 	}
@@ -623,7 +623,7 @@ private:
 
 	CallbackData m_readyCallback;
 	CallbackData m_messageCallback;
-	CallbackData m_errorCallback;
+	CallbackData m_logCallback;
 	CallbackData m_slashCommandCallback;
 	CallbackData m_autocompleteCallback;
 
@@ -654,10 +654,10 @@ public:
 		m_messageCallback.forward = forward; 
 		m_messageCallback.data = data;
 	}
-	void SetErrorCallback(IChangeableForward* forward, cell_t data = 0) { 
-		if (m_errorCallback.forward) forwards->ReleaseForward(m_errorCallback.forward);
-		m_errorCallback.forward = forward; 
-		m_errorCallback.data = data;
+	void SetLogCallback(IChangeableForward* forward, cell_t data = 0) { 
+		if (m_logCallback.forward) forwards->ReleaseForward(m_logCallback.forward);
+		m_logCallback.forward = forward; 
+		m_logCallback.data = data;
 	}
 	void SetSlashCommandCallback(IChangeableForward* forward, cell_t data = 0) { 
 		if (m_slashCommandCallback.forward) forwards->ReleaseForward(m_slashCommandCallback.forward);
@@ -759,7 +759,7 @@ public:
 	}
 	
 	~DiscordInteraction() {
-		if (m_userHandle != BAD_HANDLE) {
+		if (m_userHandle) {
 			handlesys->FreeHandle(m_userHandle, nullptr);
 		}
 	}
@@ -864,7 +864,7 @@ public:
 	}
 	
 	~DiscordAutocompleteInteraction() {
-		if (m_userHandle != BAD_HANDLE) {
+		if (m_userHandle) {
 			handlesys->FreeHandle(m_userHandle, nullptr);
 		}
 	}
@@ -1223,10 +1223,7 @@ public:
 		perm.type = type;
 		perm.permission = permission;
 		
-		// Remove existing permission override for the same target and type if it exists
 		RemovePermissionOverride(target_id, type);
-		
-		// Add the new permission override
 		m_permissions.push_back(perm);
 	}
 	
@@ -1252,12 +1249,122 @@ public:
 		return true;
 	}
 	
-	// Command management methods (declared only, implemented in discord.cpp)
+
 	bool Update(dpp::snowflake guild_id = 0);
 	bool Delete(dpp::snowflake guild_id = 0);
-	bool ApplyPermissionOverrides(dpp::snowflake guild_id);  // Renamed from ModifyPermissions
+	bool ApplyPermissionOverrides(dpp::snowflake guild_id);
 
 	const dpp::slashcommand& GetCommand() const { return m_command; }
+};
+
+// HTTP Classes
+class HttpHeaders
+{
+private:
+	std::map<std::string, std::string> m_headers;
+
+public:
+	HttpHeaders() {}
+
+	void SetHeader(const char* name, const char* value) {
+		m_headers[name] = value;
+	}
+
+	bool GetHeader(const char* name, std::string& value) const {
+		auto it = m_headers.find(name);
+		if (it != m_headers.end()) {
+			value = it->second;
+			return true;
+		}
+		return false;
+	}
+
+	bool RemoveHeader(const char* name) {
+		return m_headers.erase(name) > 0;
+	}
+
+	void ClearHeaders() {
+		m_headers.clear();
+	}
+
+	size_t Count() const {
+		return m_headers.size();
+	}
+
+	bool GetHeaderByIndex(size_t index, std::string& name, std::string& value) const {
+		if (index >= m_headers.size()) return false;
+		auto it = m_headers.begin();
+		std::advance(it, index);
+		name = it->first;
+		value = it->second;
+		return true;
+	}
+
+	// Convert to DPP headers format
+	dpp::http_headers ToDppHeaders() const {
+		dpp::http_headers headers;
+		for (const auto& pair : m_headers) {
+			headers.emplace(pair.first, pair.second);
+		}
+		return headers;
+	}
+};
+
+class HttpCompletion
+{
+private:
+	dpp::http_request_completion_t m_completion;
+	std::string m_protocol;
+	mutable Handle_t m_responseHeadersHandle;
+
+public:
+	HttpCompletion(const dpp::http_request_completion_t& completion, const std::string& protocol = "1.1") 
+		: m_completion(completion), m_protocol(protocol), m_responseHeadersHandle(BAD_HANDLE) {}
+
+	~HttpCompletion() {
+		if (m_responseHeadersHandle) {
+			handlesys->FreeHandle(m_responseHeadersHandle, nullptr);
+		}
+	}
+
+	// Store the handle when ResponseHeaders is accessed
+	void SetResponseHeadersHandle(Handle_t handle) const {
+		m_responseHeadersHandle = handle;
+	}
+
+	// Get the stored handle
+	Handle_t GetResponseHeadersHandle() const {
+		return m_responseHeadersHandle;
+	}
+
+	int GetStatus() const {
+		return static_cast<int>(m_completion.status);
+	}
+
+	const std::string& GetBody() const {
+		return m_completion.body;
+	}
+
+	size_t GetBodyLength() const {
+		return m_completion.body.length();
+	}
+
+	// Create HttpHeaders object from response headers
+	HttpHeaders* CreateResponseHeaders() const {
+		HttpHeaders* headers = new HttpHeaders();
+		for (const auto& pair : m_completion.headers) {
+			headers->SetHeader(pair.first.c_str(), pair.second.c_str());
+		}
+		return headers;
+	}
+
+	const std::string& GetProtocol() const {
+		return m_protocol;
+	}
+
+	bool IsSuccess() const {
+		return m_completion.error == dpp::http_error::h_success && m_completion.status >= 200 && m_completion.status < 300;
+	}
 };
 
 #endif // _INCLUDE_DISCORD_H_ 

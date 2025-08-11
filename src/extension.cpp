@@ -1,6 +1,6 @@
 #include "extension.h"
 
-#define MAX_PROCESS 10
+#define MAX_PROCESS 20
 
 DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
@@ -16,7 +16,9 @@ HandleType_t
 	g_DiscordAutocompleteInteractionHandle,
 	g_DiscordSlashCommandHandle,
 	g_DiscordForumTagHandle,
-	g_DiscordGuildHandle;
+	g_DiscordGuildHandle,
+	g_HttpHeadersHandle,
+	g_HttpCompletionHandle;
 
 DiscordHandler g_DiscordHandler;
 DiscordUserHandler g_DiscordUserHandler;
@@ -29,6 +31,8 @@ DiscordAutocompleteInteractionHandler g_DiscordAutocompleteInteractionHandler;
 DiscordSlashCommandHandler g_DiscordSlashCommandHandler;
 DiscordForumTagHandler g_DiscordForumTagHandler;
 DiscordGuildHandler g_DiscordGuildHandler;
+HttpHeadersHandler g_HttpHeadersHandler;
+HttpCompletionHandler g_HttpCompletionHandler;
 
 
 ThreadSafeQueue<std::function<void()>> g_TaskQueue;
@@ -62,6 +66,8 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	g_DiscordSlashCommandHandle = handlesys->CreateType("DiscordSlashCommand", &g_DiscordSlashCommandHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordForumTagHandle = handlesys->CreateType("DiscordForumTag", &g_DiscordForumTagHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordGuildHandle = handlesys->CreateType("DiscordGuild", &g_DiscordGuildHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_HttpHeadersHandle = handlesys->CreateType("HttpHeaders", &g_HttpHeadersHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+	g_HttpCompletionHandle = handlesys->CreateType("HttpCompletion", &g_HttpCompletionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 
 	smutils->AddGameFrameHook(&OnGameFrame);
 
@@ -81,6 +87,8 @@ void DiscordExtension::SDK_OnUnload()
 	handlesys->RemoveType(g_DiscordSlashCommandHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordForumTagHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordGuildHandle, myself->GetIdentity());
+	handlesys->RemoveType(g_HttpHeadersHandle, myself->GetIdentity());
+	handlesys->RemoveType(g_HttpCompletionHandle, myself->GetIdentity());
 
 	smutils->RemoveGameFrameHook(&OnGameFrame);
 }
@@ -150,4 +158,16 @@ void DiscordGuildHandler::OnHandleDestroy(HandleType_t type, void* object)
 {
 	DiscordGuild* guild = (DiscordGuild*)object;
 	delete guild;
+}
+
+void HttpHeadersHandler::OnHandleDestroy(HandleType_t type, void* object)
+{
+	HttpHeaders* headers = (HttpHeaders*)object;
+	delete headers;
+}
+
+void HttpCompletionHandler::OnHandleDestroy(HandleType_t type, void* object)
+{
+	HttpCompletion* completion = (HttpCompletion*)object;
+	delete completion;
 }

@@ -30,11 +30,12 @@ A [SourceMod](http://www.sourcemod.net/) extension that provides Discord bot int
 * **Permission System**: Complete Discord permission checking with enum support (47 permissions)
 * **User Management**: Comprehensive user information, role management, moderation actions
 * **Role System**: Role checking, permission validation, role name resolution
-* **Event Handling**: Ready, message, command, autocomplete, and error events
+* **Event Handling**: Ready, message, command, autocomplete, and log events
 * **Channel Management**: Channel information retrieval, modification, and permission checking
 * **Forum Support**: Complete forum channel functionality with tags, thread creation, and management
 * **Message Components**: Reaction support (add, remove, remove all)
 * **Moderation Tools**: Ban, kick, timeout, role management with reason support
+* **HTTP Client**: Built-in HTTP client for external API requests with header support and response handling
 
 ## Platform Support
 * ⚠️ **Windows Users**: D++ library does not support static compilation on Windows. You need to manually copy the following DLL files to your server's directory:
@@ -242,7 +243,7 @@ void SendServerStatus()
   DiscordEmbed embed = new DiscordEmbed();
   embed.SetTitle("Server Status");
   embed.SetDescription("Current server information");
-  embed.SetColor(0x00FF00);  // Green color
+  embed.Color = 0x00FF00;  // Green color
   embed.SetAuthor("Game Server", "", "https://example.com/icon.png");
   embed.SetFooter("Last updated", "https://example.com/footer.png");
   embed.SetThumbnail("https://example.com/thumbnail.png");
@@ -262,12 +263,12 @@ void SendServerStatus()
 public void OnPluginStart()
 {
   // Create a webhook and execute it with embed
-  DiscordWebhook webhook = new DiscordWebhook("https://discord.com/api/webhooks/YOUR_WEBHOOK_URL");
+  DiscordWebhook webhook = new DiscordWebhook(g_Discord, "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL");
   
   DiscordEmbed embed = new DiscordEmbed();
   embed.SetTitle("Plugin Started");
   embed.SetDescription("The Discord plugin has been loaded successfully");
-  embed.SetColor(0x00AA00);
+  embed.Color = 0x00AA00;
   
   webhook.ExecuteEmbed("Plugin notification:", embed);
   
@@ -398,7 +399,7 @@ void SendMessageWithEmbed()
   // Configure the embed
   embed.SetTitle("Server Status");
   embed.SetDescription("Current server information");
-  embed.SetColor(0x00FF00);
+  embed.Color = 0x00FF00;
   embed.AddField("Players", "15/32", true);
   embed.AddField("Map", "de_dust2", true);
   
@@ -424,7 +425,7 @@ void SendUsingDiscordClient()
   DiscordEmbed embed = new DiscordEmbed();
   embed.SetTitle("Notification");
   embed.SetDescription("This is a notification message");
-  embed.SetColor(0xFF0000);
+  embed.Color = 0xFF0000;
   
   g_Discord.SendMessageEmbed("123456789012345678", "Alert:", embed);
   delete embed;
@@ -452,7 +453,7 @@ void SendAdvancedMessage()
   DiscordEmbed embed1 = new DiscordEmbed();
   embed1.SetTitle("Event Details");
   embed1.SetDescription("Join us for a special tournament!");
-  embed1.SetColor(0x00AA00);
+  embed1.Color = 0x00AA00;
   embed1.AddField("Start Time", "2:00 PM EST", true);
   embed1.AddField("Duration", "2 hours", true);
   embed1.AddField("Prize", "$100", true);
@@ -460,7 +461,7 @@ void SendAdvancedMessage()
   DiscordEmbed embed2 = new DiscordEmbed();
   embed2.SetTitle("How to Join");
   embed2.SetDescription("Use the `/join` command in-game");
-  embed2.SetColor(0x0000AA);
+  embed2.Color = 0x0000AA;
   
   // Add both embeds to the message
   message.AddEmbed(embed1);
@@ -497,7 +498,7 @@ void EditExistingMessage()
   DiscordEmbed newEmbed = new DiscordEmbed();
   newEmbed.SetTitle("Updated");
   newEmbed.SetDescription("This message was edited");
-  newEmbed.SetColor(0xFFAA00);
+  newEmbed.Color = 0xFFAA00;
   
   message.AddEmbed(newEmbed);
   message.Edit("Message updated with new embed!");
@@ -519,7 +520,7 @@ void SendToChannel()
   DiscordEmbed embed = new DiscordEmbed();
   embed.SetTitle("Channel Message");
   embed.SetDescription("This message was sent using a channel object");
-  embed.SetColor(0x9900FF);
+  embed.Color = 0x9900FF;
   
   channel.SendMessageEmbed("Channel notification:", embed);
   delete embed;
@@ -587,7 +588,7 @@ Action Timer_RemoveAllReactions(Handle timer, any messageHandle)
 void WebhookManagement()
 {
   // Method 1: Create webhook from ID and token (limited info)
-  DiscordWebhook webhook = DiscordWebhook.CreateFromIdToken("860851945437790209", "RGgZYVTi2TZUQA6t-KRiHcbhldWx_YNg9ZEV_4yyMof5J4EwqaRWo46kaCglIP0Q4C9F");
+  DiscordWebhook webhook = DiscordWebhook.CreateFromIdToken(g_Discord, "860851945437790209", "RGgZYVTi2TZUQA6t-KRiHcbhldWx_YNg9ZEV_4yyMof5J4EwqaRWo46kaCglIP0Q4C9F");
   
   char webhookId[64];
   webhook.GetId(webhookId, sizeof(webhookId));
@@ -808,7 +809,7 @@ void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any 
     // Create detailed server info embed
     DiscordEmbed embed = new DiscordEmbed();
     embed.SetTitle("Server Information");
-    embed.SetColor(0x007ACC);
+    embed.Color = 0x007ACC;
     
     char playerCount[16], mapName[64];
     FormatEx(playerCount, sizeof(playerCount), "%d/%d", GetClientCount(false), MaxClients);
@@ -855,7 +856,7 @@ void OnDiscordSlashCommand(Discord discord, DiscordInteraction interaction, any 
       DiscordEmbed embed = new DiscordEmbed();
       embed.SetTitle("Online Players");
       embed.SetDescription(playerList);
-      embed.SetColor(0x00FF00);
+      embed.Color = 0x00FF00;
       
       interaction.CreateResponseEmbed("", embed);
       delete embed;
@@ -1033,6 +1034,44 @@ void WorkWithForumTags()
   delete helpTag;
 }
 ```
+
+## HTTP Client Usage Examples
+```cpp
+#include <sourcemod>
+#include <discord>
+
+Discord g_Discord;
+
+public void OnPluginStart()
+{
+  g_Discord = new Discord("YOUR_BOT_TOKEN");
+  g_Discord.Start();
+}
+
+void MakeGetRequest()
+{
+  g_Discord.HttpRequest("https://jsonplaceholder.typicode.com/todos/1", .callback = OnHttpResponse);
+}
+
+void OnHttpResponse(HttpCompletion completion, any data)
+{
+  int iBodylength = completion.BodyLength+1;
+  char[] body = new char[iBodylength];
+
+  completion.GetBody(body, iBodylength);
+
+  PrintToServer("body: %s", body);
+
+  HttpHeaders responseHeaders = completion.ResponseHeaders;
+
+  PrintToServer("=== All Response Headers ===");
+  char name[128], value[256];
+  for (int i = 0; i < responseHeaders.Count; i++) {
+    if (responseHeaders.GetHeaderByIndex(i, name, sizeof(name), value, sizeof(value))) {
+      PrintToServer("Header %d: '%s' = '%s'", i, name, value);
+    }
+  }
+}
 
 ## TODO
 - [x] Reaction support (AddReaction, RemoveReaction, RemoveAllReactions)

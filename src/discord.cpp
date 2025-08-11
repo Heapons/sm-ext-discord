@@ -165,6 +165,40 @@ static DiscordAutocompleteInteraction* GetAutocompleteInteractionPointer(IPlugin
 	return interaction;
 }
 
+static HttpHeaders* GetHttpHeadersPointer(IPluginContext* pContext, Handle_t handle)
+{
+	if (handle == BAD_HANDLE) {
+		return nullptr;
+	}
+	
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	HttpHeaders* headers;
+	if ((err = handlesys->ReadHandle(handle, g_HttpHeadersHandle, &sec, (void**)&headers)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid HttpHeaders handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return headers;
+}
+
+static HttpCompletion* GetHttpCompletionPointer(IPluginContext* pContext, Handle_t handle)
+{
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	HttpCompletion* completion;
+	if ((err = handlesys->ReadHandle(handle, g_HttpCompletionHandle, &sec, (void**)&completion)) != HandleError_None)
+	{
+		pContext->ThrowNativeError("Invalid HttpCompletion handle %x (error %d)", handle, err);
+		return nullptr;
+	}
+
+	return completion;
+}
+
 bool DiscordUser::HasPermission(const char* permission) const {
 	if (!m_has_member || !permission) return false;
 	
@@ -405,7 +439,7 @@ bool DiscordWebhook::CreateWebhook(DiscordClient* client, dpp::webhook wh, IForw
 			auto webhook = callback.get<dpp::webhook>();
 
 			g_TaskQueue.Push([client, &forward, webhook = new DiscordWebhook(webhook, client), value = value]() {
-				if (forward && forward->GetFunctionCount() == 0)
+				if (!forward || !forward->GetFunctionCount())
 				{
 					delete webhook;
 					forwards->ReleaseForward(forward);
@@ -415,7 +449,7 @@ bool DiscordWebhook::CreateWebhook(DiscordClient* client, dpp::webhook wh, IForw
 				HandleError err;
 				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
 				Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, webhook, &sec, nullptr, &err);
-				if (webhookHandle == BAD_HANDLE)
+				if (!webhookHandle)
 				{
 					smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
 					delete webhook;
@@ -454,7 +488,7 @@ bool DiscordWebhook::GetWebhook(DiscordClient* client, dpp::snowflake webhook_id
 			auto webhook = callback.get<dpp::webhook>();
 
 			g_TaskQueue.Push([client, &forward, webhook = new DiscordWebhook(webhook, client), value = value]() {
-				if (forward && forward->GetFunctionCount() == 0) {
+				if (!forward || !forward->GetFunctionCount()) {
 					delete webhook;
 					forwards->ReleaseForward(forward);
 					return;
@@ -463,7 +497,7 @@ bool DiscordWebhook::GetWebhook(DiscordClient* client, dpp::snowflake webhook_id
 				HandleError err;
 				HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
 				Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, webhook, &sec, nullptr, &err);
-				if (webhookHandle == BAD_HANDLE) {
+				if (!webhookHandle) {
 					smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
 					delete webhook;
 					forwards->ReleaseForward(forward);
@@ -505,7 +539,7 @@ bool DiscordWebhook::GetChannelWebhooks(DiscordClient* client, dpp::snowflake ch
 			auto webhook_map = callback.get<dpp::webhook_map>();
 
 			g_TaskQueue.Push([client, &forward, webhooks = webhook_map, value = value]() {
-				if (forward && forward->GetFunctionCount() == 0)
+				if (!forward || !forward->GetFunctionCount())
 				{
 					forwards->ReleaseForward(forward);
 					return;
@@ -521,7 +555,7 @@ bool DiscordWebhook::GetChannelWebhooks(DiscordClient* client, dpp::snowflake ch
 				{
 					DiscordWebhook* wbk = new DiscordWebhook(pair.second, client);
 					Handle_t webhookHandle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, wbk, &sec, nullptr, &err);
-					if (webhookHandle == BAD_HANDLE)
+					if (!webhookHandle)
 					{
 						smutils->LogError(myself, "Could not create webhook handle (error %d)", err);
 						delete wbk;
@@ -1193,7 +1227,7 @@ DiscordClient::~DiscordClient()
 	// Release forwards
 	if (m_readyCallback.forward) forwards->ReleaseForward(m_readyCallback.forward);
 	if (m_messageCallback.forward) forwards->ReleaseForward(m_messageCallback.forward);
-	if (m_errorCallback.forward) forwards->ReleaseForward(m_errorCallback.forward);
+	if (m_logCallback.forward) forwards->ReleaseForward(m_logCallback.forward);
 	if (m_slashCommandCallback.forward) forwards->ReleaseForward(m_slashCommandCallback.forward);
 	if (m_autocompleteCallback.forward) forwards->ReleaseForward(m_autocompleteCallback.forward);
 }
@@ -1246,6 +1280,14 @@ void DiscordClient::Stop()
 		m_thread.reset();
 
 		m_cluster.reset();
+
+		// Manual handle
+		/*
+		Handle_t handle = GetHandle();
+		if (handle) {
+			handlesys->FreeHandle(handle, nullptr);
+		}
+		*/
 	}
 	catch (const std::exception& e) {
 		smutils->LogError(myself, "Error during Discord bot shutdown: %s", e.what());
@@ -1396,123 +1438,124 @@ void DiscordClient::SetupEventHandlers()
 		return;
 	}
 
+	// If the callback is not registered, return! (do not push any tasks to the queue)
+
 	m_cluster->on_ready([this](const dpp::ready_t& event) {
 		UpdateBotInfo();
+		if (!m_readyCallback.forward || !m_readyCallback.forward->GetFunctionCount()) return;
+
 		g_TaskQueue.Push([this]() {
-			if (m_readyCallback.forward && m_readyCallback.forward->GetFunctionCount()) {
-				m_readyCallback.forward->PushCell(m_discord_handle);
-				m_readyCallback.forward->PushCell(m_readyCallback.data);
-				m_readyCallback.forward->Execute(nullptr);
-			}
-			});
+			m_readyCallback.forward->PushCell(m_discord_handle);
+			m_readyCallback.forward->PushCell(m_readyCallback.data);
+			m_readyCallback.forward->Execute(nullptr);
 		});
+	});
 
 	m_cluster->on_message_create([this](const dpp::message_create_t& event) {
+		if (!m_messageCallback.forward || !m_messageCallback.forward->GetFunctionCount()) return;
+
 		g_TaskQueue.Push([this, msg = event.msg]() {
-			if (m_messageCallback.forward && m_messageCallback.forward->GetFunctionCount()) {
-				DiscordMessage* message = new DiscordMessage(msg, this);
-				HandleError err;
-				HandleSecurity sec;
-				sec.pOwner = myself->GetIdentity();
-				sec.pIdentity = myself->GetIdentity();
+			DiscordMessage* message = new DiscordMessage(msg, this);
+			HandleError err;
+			HandleSecurity sec;
+			sec.pOwner = myself->GetIdentity();
+			sec.pIdentity = myself->GetIdentity();
 
-				Handle_t messageHandle = handlesys->CreateHandleEx(g_DiscordMessageHandle,
-					message,
-					&sec,
-					nullptr,
-					&err);
+			Handle_t messageHandle = handlesys->CreateHandleEx(g_DiscordMessageHandle,
+				message,
+				&sec,
+				nullptr,
+				&err);
 
-				if (messageHandle != BAD_HANDLE) {
-					m_messageCallback.forward->PushCell(m_discord_handle);
-					m_messageCallback.forward->PushCell(messageHandle);
-					m_messageCallback.forward->PushCell(m_messageCallback.data);
-					m_messageCallback.forward->Execute(nullptr);
+			if (messageHandle) {
+				m_messageCallback.forward->PushCell(m_discord_handle);
+				m_messageCallback.forward->PushCell(messageHandle);
+				m_messageCallback.forward->PushCell(m_messageCallback.data);
+				m_messageCallback.forward->Execute(nullptr);
 
-					handlesys->FreeHandle(messageHandle, &sec);
-				} else {
-					delete message;
-				}
+				handlesys->FreeHandle(messageHandle, &sec);
+			} else {
+				delete message;
 			}
-			});
 		});
+	});
 
 	m_cluster->on_log([this](const dpp::log_t& event) {
-		//std::cout << "[Discord]: " << event.message << std::endl;
-		if (event.severity >= dpp::ll_error) {
-			g_TaskQueue.Push([this, message = event.message]() {
-			if (m_errorCallback.forward && m_errorCallback.forward->GetFunctionCount()) {
-				m_errorCallback.forward->PushCell(m_discord_handle);
-				m_errorCallback.forward->PushString(message.c_str());
-				m_errorCallback.forward->PushCell(m_errorCallback.data);
-				m_errorCallback.forward->Execute(nullptr);
-			}
-			});
-		}});
+		if (!m_logCallback.forward || !m_logCallback.forward->GetFunctionCount()) return;
+
+		g_TaskQueue.Push([this, severity = event.severity, message = event.message]() {
+			m_logCallback.forward->PushCell(m_discord_handle);
+			m_logCallback.forward->PushCell(severity);
+			m_logCallback.forward->PushString(message.c_str());
+			m_logCallback.forward->PushCell(m_logCallback.data);
+			m_logCallback.forward->Execute(nullptr);
+		});
+	});
 
 	m_cluster->on_slashcommand([this](const dpp::slashcommand_t& event) {
+		if (!m_slashCommandCallback.forward || !m_slashCommandCallback.forward->GetFunctionCount()) return;
+
 		g_TaskQueue.Push([this, event]() {
-			if (m_slashCommandCallback.forward && m_slashCommandCallback.forward->GetFunctionCount()) {
-				DiscordInteraction* interaction = new DiscordInteraction(event, this);
+			DiscordInteraction* interaction = new DiscordInteraction(event, this);
 
-				HandleError err;
-				HandleSecurity sec;
-				sec.pOwner = myself->GetIdentity();
-				sec.pIdentity = myself->GetIdentity();
+			HandleError err;
+			HandleSecurity sec;
+			sec.pOwner = myself->GetIdentity();
+			sec.pIdentity = myself->GetIdentity();
 
-				Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordInteractionHandle,
-					interaction,
-					&sec,
-					nullptr,
-					&err);
+			Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordInteractionHandle,
+				interaction,
+				&sec,
+				nullptr,
+				&err);
 
-				if (interactionHandle != BAD_HANDLE) {
-					m_slashCommandCallback.forward->PushCell(m_discord_handle);
-					m_slashCommandCallback.forward->PushCell(interactionHandle);
-					m_slashCommandCallback.forward->PushCell(m_slashCommandCallback.data);
-					m_slashCommandCallback.forward->Execute(nullptr);
+			if (interactionHandle) {
+				m_slashCommandCallback.forward->PushCell(m_discord_handle);
+				m_slashCommandCallback.forward->PushCell(interactionHandle);
+				m_slashCommandCallback.forward->PushCell(m_slashCommandCallback.data);
+				m_slashCommandCallback.forward->Execute(nullptr);
 
-					handlesys->FreeHandle(interactionHandle, &sec);
-				} else {
-					delete interaction;
-				}
+				handlesys->FreeHandle(interactionHandle, &sec);
+			} else {
+				delete interaction;
 			}
-			});
 		});
+	});
 
 	m_cluster->on_autocomplete([this](const dpp::autocomplete_t& event) {
+		if (!m_autocompleteCallback.forward || !m_autocompleteCallback.forward->GetFunctionCount()) return;
+
 		g_TaskQueue.Push([this, event]() {
-			if (m_autocompleteCallback.forward && m_autocompleteCallback.forward->GetFunctionCount()) {
-				DiscordAutocompleteInteraction* interaction = new DiscordAutocompleteInteraction(event, this);
+			DiscordAutocompleteInteraction* interaction = new DiscordAutocompleteInteraction(event, this);
 
-				HandleError err;
-				HandleSecurity sec;
-				sec.pOwner = myself->GetIdentity();
-				sec.pIdentity = myself->GetIdentity();
+			HandleError err;
+			HandleSecurity sec;
+			sec.pOwner = myself->GetIdentity();
+			sec.pIdentity = myself->GetIdentity();
 
-				Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordAutocompleteInteractionHandle,
-						interaction,
-						&sec,
-						nullptr,
-						&err);
+			Handle_t interactionHandle = handlesys->CreateHandleEx(g_DiscordAutocompleteInteractionHandle,
+				interaction,
+				&sec,
+				nullptr,
+				&err);
 
-				if (interactionHandle != BAD_HANDLE) {
-					std::string str;
-					for (auto & opt : event.options) {
-						dpp::command_option_type type = opt.type;
+			if (interactionHandle) {
+				std::string str;
+				for (auto & opt : event.options) {
+					dpp::command_option_type type = opt.type;
 
-						m_autocompleteCallback.forward->PushCell(m_discord_handle);
-						m_autocompleteCallback.forward->PushCell(interactionHandle);
-						m_autocompleteCallback.forward->PushCell(opt.focused);
-						m_autocompleteCallback.forward->PushCell(type);
-						m_autocompleteCallback.forward->PushString(opt.name.c_str());
-						m_autocompleteCallback.forward->PushCell(m_autocompleteCallback.data);
-						m_autocompleteCallback.forward->Execute(nullptr);
-					}
-
-					handlesys->FreeHandle(interactionHandle, &sec);
-				} else {
-					delete interaction;
+					m_autocompleteCallback.forward->PushCell(m_discord_handle);
+					m_autocompleteCallback.forward->PushCell(interactionHandle);
+					m_autocompleteCallback.forward->PushCell(opt.focused);
+					m_autocompleteCallback.forward->PushCell(type);
+					m_autocompleteCallback.forward->PushString(opt.name.c_str());
+					m_autocompleteCallback.forward->PushCell(m_autocompleteCallback.data);
+					m_autocompleteCallback.forward->Execute(nullptr);
 				}
+
+				handlesys->FreeHandle(interactionHandle, &sec);
+			} else {
+				delete interaction;
 			}
 		});
 	});
@@ -1558,7 +1601,7 @@ static cell_t discord_SetMessageCallback(IPluginContext* pContext, const cell_t*
 	return 1;
 }
 
-static cell_t discord_SetErrorCallback(IPluginContext* pContext, const cell_t* params)
+static cell_t discord_SetLogCallback(IPluginContext* pContext, const cell_t* params)
 {
 	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
 	if (!discord) return 0;
@@ -1568,13 +1611,13 @@ static cell_t discord_SetErrorCallback(IPluginContext* pContext, const cell_t* p
 		return pContext->ThrowNativeError("Invalid callback function");
 	}
 
-	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 3, nullptr, Param_Cell, Param_String, Param_Cell);
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 4, nullptr, Param_Cell, Param_Cell, Param_String, Param_Cell);
 	if (!forward) {
 		return pContext->ThrowNativeError("Could not create forward");
 	}
 
 	forward->AddFunction(callback);
-	discord->SetErrorCallback(forward, params[3]);
+	discord->SetLogCallback(forward, params[3]);
 	return 1;
 }
 
@@ -1635,7 +1678,7 @@ static cell_t discord_CreateClient(IPluginContext* pContext, const cell_t* param
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordHandle, pDiscordClient, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		pContext->ReportError("Could not create Discord handle (error %d)", err);
 		delete pDiscordClient;
@@ -2019,7 +2062,7 @@ static cell_t embed_CreateEmbed(IPluginContext* pContext, const cell_t* params)
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordEmbedHandle, embed, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete embed;
 		return pContext->ThrowNativeError("Could not create Discord embed handle (error %d)", err);
@@ -2131,7 +2174,7 @@ static cell_t embed_AddField(IPluginContext* pContext, const cell_t* params)
 	char* value;
 	pContext->LocalToString(params[3], &value);
 
-	bool inLine = params[4] ? true : false;
+	bool inLine = params[4];
 
 	embed->AddField(name, value, inLine);
 	return 1;
@@ -2353,7 +2396,7 @@ static cell_t embed_GetTimestamp(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-  return static_cast<cell_t>(embed->GetTimestamp());
+	return static_cast<cell_t>(embed->GetTimestamp());
 }
 
 static cell_t embed_GetAuthorProxyIconUrl(IPluginContext* pContext, const cell_t* params)
@@ -2682,7 +2725,7 @@ static cell_t user_CreateFromId(IPluginContext* pContext, const cell_t* params)
 			HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 			Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-			if (handle == BAD_HANDLE) {
+			if (!handle) {
 				delete pDiscordUser;
 				pContext->ReportError("Could not create user handle (error %d)", err);
 				return BAD_HANDLE;
@@ -2718,7 +2761,7 @@ static cell_t user_CreateFromId(IPluginContext* pContext, const cell_t* params)
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE) {
+		if (!handle) {
 			delete pDiscordUser;
 			pContext->ReportError("Could not create user handle (error %d)", err);
 			return BAD_HANDLE;
@@ -2787,7 +2830,7 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 							sec.pIdentity = myself->GetIdentity();
 							Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-							if (handle == BAD_HANDLE) {
+							if (!handle) {
 								delete pDiscordUser;
 								return;
 							}
@@ -2831,7 +2874,7 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 						sec.pIdentity = myself->GetIdentity();
 						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-						if (handle == BAD_HANDLE) {
+						if (!handle) {
 							delete pDiscordUser;
 							return;
 						}
@@ -2865,7 +2908,7 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 						sec.pIdentity = myself->GetIdentity();
 						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-						if (handle == BAD_HANDLE) {
+						if (!handle) {
 							delete pDiscordUser;
 							return;
 						}
@@ -2914,7 +2957,7 @@ static cell_t user_FetchUser(IPluginContext* pContext, const cell_t* params)
 						sec.pIdentity = myself->GetIdentity();
 						Handle_t handle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 
-						if (handle == BAD_HANDLE) {
+						if (!handle) {
 							delete pDiscordUser;
 							return;
 						}
@@ -2982,7 +3025,7 @@ static cell_t message_FetchMessage(IPluginContext* pContext, const cell_t* param
 					sec.pIdentity = myself->GetIdentity();
 					Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-					if (handle == BAD_HANDLE) {
+					if (!handle) {
 						delete pDiscordMessage;
 						return;
 					}
@@ -3041,7 +3084,7 @@ static cell_t channel_FetchChannel(IPluginContext* pContext, const cell_t* param
 					sec.pIdentity = myself->GetIdentity();
 					Handle_t handle = handlesys->CreateHandleEx(g_DiscordChannelHandle, pDiscordChannel, &sec, nullptr, &err);
 
-					if (handle == BAD_HANDLE) {
+					if (!handle) {
 						delete pDiscordChannel;
 						return;
 					}
@@ -3076,7 +3119,7 @@ static cell_t channel_FetchChannel(IPluginContext* pContext, const cell_t* param
 					sec.pIdentity = myself->GetIdentity();
 					Handle_t handle = handlesys->CreateHandleEx(g_DiscordChannelHandle, pDiscordChannel, &sec, nullptr, &err);
 
-					if (handle == BAD_HANDLE) {
+					if (!handle) {
 						delete pDiscordChannel;
 						return;
 					}
@@ -3129,7 +3172,7 @@ static cell_t message_CreateFromId(IPluginContext* pContext, const cell_t* param
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE) {
+		if (!handle) {
 			delete pDiscordMessage;
 			pContext->ReportError("Could not create message handle (error %d)", err);
 			return BAD_HANDLE;
@@ -3156,7 +3199,7 @@ static cell_t message_CreateEmpty(IPluginContext* pContext, const cell_t* params
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		delete pDiscordMessage;
 		pContext->ReportError("Could not create message handle (error %d)", err);
 		return BAD_HANDLE;
@@ -3181,7 +3224,7 @@ static cell_t message_CreateWithContent(IPluginContext* pContext, const cell_t* 
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		delete pDiscordMessage;
 		pContext->ReportError("Could not create message handle (error %d)", err);
 		return BAD_HANDLE;
@@ -3211,7 +3254,7 @@ static cell_t message_CreateWithChannel(IPluginContext* pContext, const cell_t* 
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE) {
+		if (!handle) {
 			delete pDiscordMessage;
 			pContext->ReportError("Could not create message handle (error %d)", err);
 			return BAD_HANDLE;
@@ -3243,7 +3286,7 @@ static cell_t message_CreateWithEmbed(IPluginContext* pContext, const cell_t* pa
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		delete pDiscordMessage;
 		pContext->ReportError("Could not create message handle (error %d)", err);
 		return BAD_HANDLE;
@@ -3275,7 +3318,7 @@ static cell_t message_CreateWithChannelEmbed(IPluginContext* pContext, const cel
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordMessageHandle, pDiscordMessage, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE) {
+		if (!handle) {
 			delete pDiscordMessage;
 			pContext->ReportError("Could not create message handle (error %d)", err);
 			return BAD_HANDLE;
@@ -4089,7 +4132,7 @@ static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 					sec.pIdentity = myself->GetIdentity();
 					Handle_t handle = handlesys->CreateHandleEx(g_DiscordGuildHandle, pDiscordGuild, &sec, nullptr, &err);
 
-					if (handle == BAD_HANDLE) {
+					if (!handle) {
 						delete pDiscordGuild;
 						return;
 					}
@@ -4128,7 +4171,7 @@ static cell_t guild_FetchGuild(IPluginContext* pContext, const cell_t* params)
 					sec.pIdentity = myself->GetIdentity();
 					Handle_t handle = handlesys->CreateHandleEx(g_DiscordGuildHandle, pDiscordGuild, &sec, nullptr, &err);
 
-					if (handle == BAD_HANDLE) {
+					if (!handle) {
 						delete pDiscordGuild;
 						return;
 					}
@@ -5071,7 +5114,7 @@ static cell_t slashcommand_CreateSlashCommand(IPluginContext* pContext, const ce
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordSlashCommandHandle, command, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete command;
 		return pContext->ThrowNativeError("Could not create Discord slash command handle (error %d)", err);
@@ -5105,7 +5148,7 @@ static cell_t slashcommand_FromGlobalCommand(IPluginContext* pContext, const cel
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordSlashCommandHandle, command, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete command;
 		return pContext->ThrowNativeError("Could not create Discord slash command handle (error %d)", err);
@@ -5143,7 +5186,7 @@ static cell_t slashcommand_FromGuildCommand(IPluginContext* pContext, const cell
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordSlashCommandHandle, command, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete command;
 		return pContext->ThrowNativeError("Could not create Discord slash command handle (error %d)", err);
@@ -5801,7 +5844,7 @@ static cell_t message_GetAuthor(IPluginContext* pContext, const cell_t* params)
 
 	Handle_t handle = message->GetAuthorHandle();
 	
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		pContext->ReportError("Could not create author handle");
 		return BAD_HANDLE;
 	}
@@ -6314,7 +6357,7 @@ static cell_t message_SetTTS(IPluginContext* pContext, const cell_t* params)
 	DiscordMessage* message = GetMessagePointer(pContext, params[1]);
 	if (!message) return 0;
 	
-	message->SetTTS(params[2] ? true : false);
+	message->SetTTS(params[2]);
 	return 1;
 }
 
@@ -6394,7 +6437,7 @@ static cell_t channel_CreateFromId(IPluginContext* pContext, const cell_t* param
 			HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 			Handle_t handle = handlesys->CreateHandleEx(g_DiscordChannelHandle, pDiscordChannel, &sec, nullptr, &err);
 
-			if (handle == BAD_HANDLE) {
+			if (!handle) {
 				delete pDiscordChannel;
 				pContext->ReportError("Could not create channel handle (error %d)", err);
 				return BAD_HANDLE;
@@ -6409,7 +6452,7 @@ static cell_t channel_CreateFromId(IPluginContext* pContext, const cell_t* param
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordChannelHandle, pDiscordChannel, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE) {
+		if (!handle) {
 			delete pDiscordChannel;
 			pContext->ReportError("Could not create channel handle (error %d)", err);
 			return BAD_HANDLE;
@@ -6661,7 +6704,7 @@ static cell_t channel_SetNSFW(IPluginContext* pContext, const cell_t* params)
 		return 0;
 	}
 
-	bool nsfw = params[2] ? true : false;
+	bool nsfw = params[2];
 	return channel->SetNSFW(nsfw);
 }
 
@@ -7275,7 +7318,7 @@ static cell_t forumtag_Create(IPluginContext* pContext, const cell_t* params)
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordForumTagHandle, pForumTag, &sec, nullptr, &err);
 	
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete pForumTag;
 		pContext->ReportError("Could not create forum tag handle (error %d)", err);
@@ -7390,8 +7433,13 @@ static cell_t channel_GetIconUrl(IPluginContext* pContext, const cell_t* params)
 
 static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* params)
 {
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
 	char* webhook_url;
-	pContext->LocalToString(params[1], &webhook_url);
+	pContext->LocalToString(params[2], &webhook_url);
 
 	dpp::webhook webhook;
 	try
@@ -7404,13 +7452,13 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 		return BAD_HANDLE;
 	}
 
-	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(webhook, nullptr);
+	DiscordWebhook* pDiscordWebhook = new DiscordWebhook(webhook, discord);
 
 	HandleError err;
 	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 	Handle_t handle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, pDiscordWebhook, &sec, nullptr, &err);
 
-	if (handle == BAD_HANDLE)
+	if (!handle)
 	{
 		delete pDiscordWebhook;
 		pContext->ReportError("Could not create webhook handle (error %d)", err);
@@ -7422,21 +7470,26 @@ static cell_t webhook_CreateWebhook(IPluginContext* pContext, const cell_t* para
 
 static cell_t webhook_CreateWebhookFromIdToken(IPluginContext* pContext, const cell_t* params)
 {
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
 	char* webhook_id;
-	pContext->LocalToString(params[1], &webhook_id);
+	pContext->LocalToString(params[2], &webhook_id);
 	
 	char* webhook_token;
-	pContext->LocalToString(params[2], &webhook_token);
+	pContext->LocalToString(params[3], &webhook_token);
 
 	try {
 		dpp::snowflake id = std::stoull(webhook_id);
-		DiscordWebhook* pDiscordWebhook = new DiscordWebhook(id, std::string(webhook_token), nullptr);
+		DiscordWebhook* pDiscordWebhook = new DiscordWebhook(id, std::string(webhook_token), discord);
 
 		HandleError err;
 		HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
 		Handle_t handle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, pDiscordWebhook, &sec, nullptr, &err);
 
-		if (handle == BAD_HANDLE)
+		if (!handle)
 		{
 			delete pDiscordWebhook;
 			pContext->ReportError("Could not create webhook handle (error %d)", err);
@@ -7485,7 +7538,7 @@ static cell_t webhook_FetchWebhook(IPluginContext* pContext, const cell_t* param
 				HandleSecurity sec(nullptr, myself->GetIdentity());
 				Handle_t handle = handlesys->CreateHandleEx(g_DiscordWebhookHandle, pDiscordWebhook, &sec, nullptr, &err);
 
-				if (handle == BAD_HANDLE) {
+				if (!handle) {
 					delete pDiscordWebhook;
 					return;
 				}
@@ -7525,7 +7578,7 @@ static cell_t webhook_GetUser(IPluginContext* pContext, const cell_t* params)
 
 	Handle_t handle = webhook->GetUserHandle();
 	
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		pContext->ReportError("Could not create user handle");
 		return BAD_HANDLE;
 	}
@@ -7931,7 +7984,7 @@ static cell_t interaction_DeferReply(IPluginContext* pContext, const cell_t* par
 		return 0;
 	}
 
-	interaction->DeferReply(params[2] ? true : false);
+	interaction->DeferReply(params[2]);
 	return 1;
 }
 
@@ -8027,7 +8080,7 @@ static cell_t interaction_GetUser(IPluginContext* pContext, const cell_t* params
 
 	Handle_t handle = interaction->GetUserHandle();
 	
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		pContext->ReportError("Could not create user handle");
 		return BAD_HANDLE;
 	}
@@ -8115,7 +8168,7 @@ static cell_t autocomplete_GetUser(IPluginContext* pContext, const cell_t* param
 
 	Handle_t handle = interaction->GetUserHandle();
 	
-	if (handle == BAD_HANDLE) {
+	if (!handle) {
 		pContext->ReportError("Could not create user handle");
 		return BAD_HANDLE;
 	}
@@ -8238,6 +8291,307 @@ static cell_t autocomplete_AddAutocompleteChoiceString(IPluginContext* pContext,
 
 	interaction->m_response.add_autocomplete_choice(dpp::command_option_choice(name, std::string(str_value)));
 	return 1;
+}
+
+// HttpHeaders Native Functions
+static cell_t httpheaders_HttpHeaders(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = new HttpHeaders();
+	if (!headers) {
+		return BAD_HANDLE;
+	}
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_HttpHeadersHandle, headers, &sec, nullptr, &err);
+	
+	if (handle == BAD_HANDLE) {
+		delete headers;
+		pContext->ReportError("Failed to create HttpHeaders handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	return handle;
+}
+
+static cell_t httpheaders_SetHeader(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	char* name;
+	char* value;
+	pContext->LocalToString(params[2], &name);
+	pContext->LocalToString(params[3], &value);
+
+	headers->SetHeader(name, value);
+	return 1;
+}
+
+static cell_t httpheaders_GetHeader(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	std::string value;
+	if (headers->GetHeader(name, value)) {
+		pContext->StringToLocalUTF8(params[3], params[4], value.c_str(), nullptr);
+		return 1;
+	}
+	return 0;
+}
+
+static cell_t httpheaders_RemoveHeader(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	char* name;
+	pContext->LocalToString(params[2], &name);
+
+	return headers->RemoveHeader(name);
+}
+
+static cell_t httpheaders_ClearHeaders(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	headers->ClearHeaders();
+	return 1;
+}
+
+static cell_t httpheaders_Count(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	return static_cast<cell_t>(headers->Count());
+}
+
+static cell_t httpheaders_GetHeaderByIndex(IPluginContext* pContext, const cell_t* params)
+{
+	HttpHeaders* headers = GetHttpHeadersPointer(pContext, params[1]);
+	if (!headers) {
+		return 0;
+	}
+
+	size_t index = static_cast<size_t>(params[2]);
+	std::string name, value;
+	
+	if (headers->GetHeaderByIndex(index, name, value)) {
+		pContext->StringToLocalUTF8(params[3], params[4], name.c_str(), nullptr);
+		pContext->StringToLocalUTF8(params[5], params[6], value.c_str(), nullptr);
+		return 1;
+	}
+	return 0;
+}
+
+// HttpCompletion Native Functions
+static cell_t httpcompletion_GetStatus(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return 0;
+	}
+
+	return static_cast<cell_t>(completion->GetStatus());
+}
+
+static cell_t httpcompletion_GetBody(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return 0;
+	}
+
+	pContext->StringToLocalUTF8(params[2], params[3], completion->GetBody().c_str(), nullptr);
+	return 1;
+}
+
+static cell_t httpcompletion_GetBodyLength(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return 0;
+	}
+
+	return static_cast<cell_t>(completion->GetBodyLength());
+}
+
+static cell_t httpcompletion_GetResponseHeaders(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return BAD_HANDLE;
+	}
+
+	// Check if we already created the ResponseHeaders handle
+	Handle_t existingHandle = completion->GetResponseHeadersHandle();
+	if (existingHandle) {
+		return existingHandle;
+	}
+
+	HttpHeaders* headers = completion->CreateResponseHeaders();
+	if (!headers) {
+		return BAD_HANDLE;
+	}
+
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+	Handle_t handle = handlesys->CreateHandleEx(g_HttpHeadersHandle, headers, &sec, nullptr, &err);
+	
+	if (handle == BAD_HANDLE) {
+		delete headers;
+		pContext->ReportError("Failed to create HttpHeaders handle (error %d)", err);
+		return BAD_HANDLE;
+	}
+
+	// Store the handle in HttpCompletion for automatic cleanup
+	completion->SetResponseHeadersHandle(handle);
+
+	return handle;
+}
+
+static cell_t httpcompletion_GetProtocol(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return 0;
+	}
+
+	pContext->StringToLocalUTF8(params[2], params[3], completion->GetProtocol().c_str(), nullptr);
+	return 1;
+}
+
+static cell_t httpcompletion_IsSuccess(IPluginContext* pContext, const cell_t* params)
+{
+	HttpCompletion* completion = GetHttpCompletionPointer(pContext, params[1]);
+	if (!completion) {
+		return 0;
+	}
+
+	return completion->IsSuccess();
+}
+
+// HttpRequest Native Function
+static cell_t discord_HttpRequest(IPluginContext* pContext, const cell_t* params)
+{
+	DiscordClient* discord = GetDiscordPointer(pContext, params[1]);
+	if (!discord) {
+		return 0;
+	}
+
+	if (!discord->IsRunning()) {
+		pContext->ReportError("Bot instance not running, unable to send request");
+		return 0;
+	}
+
+	char* url;
+	pContext->LocalToString(params[2], &url);
+	
+	dpp::http_method method = static_cast<dpp::http_method>(params[3]);
+	
+	IPluginFunction* callback = pContext->GetFunctionById(params[4]);
+
+	if (!callback) {
+		pContext->ReportError("Invalid callback function");
+		return 0;
+	}
+	
+	char* body = nullptr;
+	if (params[0] >= 5) {
+		pContext->LocalToString(params[5], &body);
+	}
+	
+	char* content_type = nullptr;
+	if (params[0] >= 6) {
+		pContext->LocalToString(params[6], &content_type);
+	}
+
+	HttpHeaders* headers = nullptr;
+	if (params[0] >= 7) {
+		headers = GetHttpHeadersPointer(pContext, params[7]);
+	}
+
+	char* protocol = nullptr;
+	if (params[0] >= 8) {
+		pContext->LocalToString(params[8], &protocol);
+	}
+
+	cell_t data = params[9];
+	
+	// Create forward for callback with HttpCompletion parameter
+	IChangeableForward* forward = forwards->CreateForwardEx(nullptr, ET_Ignore, 2, nullptr, Param_Cell, Param_Any);
+	if (!forward) {
+		pContext->ReportError("Failed to create callback forward");
+		return 0;
+	}
+	forward->AddFunction(callback);
+	
+	// Check if there are listeners before making the request
+	if (!forward || !forward->GetFunctionCount()) {
+		forwards->ReleaseForward(forward);
+		return 0;
+	}
+	
+	std::string request_body = body ? body : "";
+	std::string mime_type = content_type ? content_type : "application/json";
+	std::string http_protocol = protocol ? protocol : "1.1";
+	dpp::http_headers dpp_headers;
+	
+	if (headers) {
+		dpp_headers = headers->ToDppHeaders();
+	}
+	
+	try {
+		discord->GetCluster()->request(url, method, [forward, data, http_protocol](const dpp::http_request_completion_t& completion) {
+			g_TaskQueue.Push([forward, completion, data, http_protocol]() {
+				HandleError err;
+				HandleSecurity sec(nullptr, myself->GetIdentity());
+				
+				// Create HttpCompletion object
+				HttpCompletion* httpCompletion = new HttpCompletion(completion, http_protocol);
+				Handle_t completionHandle = handlesys->CreateHandleEx(g_HttpCompletionHandle, httpCompletion, &sec, nullptr, &err);
+				
+				if (completionHandle) {
+					forward->PushCell(completionHandle);
+					forward->PushCell(data);
+					forward->Execute(nullptr);
+					
+					// Automatically free the handle after callback execution
+					handlesys->FreeHandle(completionHandle, &sec);
+				} else {
+					// If handle creation failed, clean up the object manually
+					delete httpCompletion;
+				}
+				
+				if (forward) {
+					forwards->ReleaseForward(forward);
+				}
+			});
+		}, request_body, mime_type, dpp_headers, http_protocol);
+		
+		return 1;
+	}
+	catch (const std::exception& e) {
+		forwards->ReleaseForward(forward);
+		smutils->LogError(myself, "HTTP request failed: %s", e.what());
+		return 0;
+	}
 }
 
 static cell_t autocomplete_CreateAutocompleteResponse(IPluginContext* pContext, const cell_t* params)
@@ -8792,7 +9146,7 @@ bool DiscordClient::CreateChannel(dpp::snowflake guild_id, const char* name, dpp
 				
 				g_TaskQueue.Push([this, forward, ch = callback.get<dpp::channel>(), value]() {
 					DiscordChannel* discord_channel = new DiscordChannel(ch, this);
-					if (forward && forward->GetFunctionCount() == 0) {
+					if (!forward || !forward->GetFunctionCount()) {
 						delete discord_channel;
 						forwards->ReleaseForward(forward);
 						return;
@@ -8801,7 +9155,7 @@ bool DiscordClient::CreateChannel(dpp::snowflake guild_id, const char* name, dpp
 					HandleError err;
 					HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
 					Handle_t channelHandle = handlesys->CreateHandleEx(g_DiscordChannelHandle, discord_channel, &sec, nullptr, &err);
-					if (channelHandle == BAD_HANDLE) {
+					if (!channelHandle) {
 						smutils->LogError(myself, "Could not create channel handle (error %d)", err);
 						delete discord_channel;
 						forwards->ReleaseForward(forward);
@@ -8849,7 +9203,7 @@ bool DiscordClient::CreateRole(dpp::snowflake guild_id, const char* name, uint32
 				auto r = callback.get<dpp::role>();
 				
 				g_TaskQueue.Push([this, &forward, role_id = r.id, value = value]() {
-					if (forward && forward->GetFunctionCount() == 0) {
+					if (!forward || !forward->GetFunctionCount()) {
 						return;
 					}
 					
@@ -9007,7 +9361,7 @@ uint64_t DiscordClient::GetUptime() const
 
 Handle_t DiscordMessage::GetAuthorHandle() const
 {
-	if (m_authorHandle != BAD_HANDLE) {
+	if (m_authorHandle) {
 		return m_authorHandle;
 	}
 	
@@ -9017,7 +9371,7 @@ Handle_t DiscordMessage::GetAuthorHandle() const
 	HandleSecurity sec(nullptr, myself->GetIdentity());
 	m_authorHandle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 	
-	if (m_authorHandle == BAD_HANDLE) {
+	if (!m_authorHandle) {
 		delete pDiscordUser;
 		return BAD_HANDLE;
 	}
@@ -9027,7 +9381,7 @@ Handle_t DiscordMessage::GetAuthorHandle() const
 
 Handle_t DiscordInteraction::GetUserHandle() const
 {
-	if (m_userHandle != BAD_HANDLE) {
+	if (m_userHandle) {
 		return m_userHandle;
 	}
 	
@@ -9037,7 +9391,7 @@ Handle_t DiscordInteraction::GetUserHandle() const
 	HandleSecurity sec(nullptr, myself->GetIdentity());
 	m_userHandle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 	
-	if (m_userHandle == BAD_HANDLE) {
+	if (!m_userHandle) {
 		delete pDiscordUser;
 		return BAD_HANDLE;
 	}
@@ -9047,7 +9401,7 @@ Handle_t DiscordInteraction::GetUserHandle() const
 
 Handle_t DiscordAutocompleteInteraction::GetUserHandle() const
 {
-	if (m_userHandle != BAD_HANDLE) {
+	if (m_userHandle) {
 		return m_userHandle;
 	}
 	
@@ -9057,7 +9411,7 @@ Handle_t DiscordAutocompleteInteraction::GetUserHandle() const
 	HandleSecurity sec(nullptr, myself->GetIdentity());
 	m_userHandle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 	
-	if (m_userHandle == BAD_HANDLE) {
+	if (!m_userHandle) {
 		delete pDiscordUser;
 		return BAD_HANDLE;
 	}
@@ -9067,7 +9421,7 @@ Handle_t DiscordAutocompleteInteraction::GetUserHandle() const
 
 Handle_t DiscordWebhook::GetUserHandle() const
 {
-	if (m_userHandle != BAD_HANDLE) {
+	if (m_userHandle) {
 		return m_userHandle;
 	}
 	
@@ -9077,7 +9431,7 @@ Handle_t DiscordWebhook::GetUserHandle() const
 	HandleSecurity sec(nullptr, myself->GetIdentity());
 	m_userHandle = handlesys->CreateHandleEx(g_DiscordUserHandle, pDiscordUser, &sec, nullptr, &err);
 	
-	if (m_userHandle == BAD_HANDLE) {
+	if (!m_userHandle) {
 		delete pDiscordUser;
 		return BAD_HANDLE;
 	}
@@ -9097,8 +9451,8 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.Uptime.get", discord_GetUptime},
 	{"Discord.SetPresence", discord_SetPresence},
 	{"Discord.IsRunning.get", discord_IsRunning},
-  {"Discord.SendMessage", discord_SendMessage},
-  {"Discord.SendMessageEmbed", discord_SendMessageEmbed},
+	{"Discord.SendMessage", discord_SendMessage},
+	{"Discord.SendMessageEmbed", discord_SendMessageEmbed},
 	{"Discord.SendDiscordMessage", discord_SendDiscordMessage},
 	{"Discord.SendDiscordMessageToChannel", discord_SendDiscordMessageToChannel},
 	{"Discord.EditMessage", discord_EditMessage},
@@ -9110,9 +9464,27 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"Discord.BulkDeleteGlobalCommands", discord_BulkDeleteGlobalCommands},
 	{"Discord.SetReadyCallback", discord_SetReadyCallback},
 	{"Discord.SetMessageCallback", discord_SetMessageCallback},
-	{"Discord.SetErrorCallback", discord_SetErrorCallback},
+	{"Discord.SetLogCallback", discord_SetLogCallback},
 	{"Discord.SetSlashCommandCallback", discord_SetSlashCommandCallback},
 	{"Discord.SetAutocompleteCallback", discord_SetAutocompleteCallback},
+	{"Discord.HttpRequest", discord_HttpRequest},
+
+	// HttpHeaders
+	{"HttpHeaders.HttpHeaders", httpheaders_HttpHeaders},
+	{"HttpHeaders.SetHeader", httpheaders_SetHeader},
+	{"HttpHeaders.GetHeader", httpheaders_GetHeader},
+	{"HttpHeaders.RemoveHeader", httpheaders_RemoveHeader},
+	{"HttpHeaders.ClearHeaders", httpheaders_ClearHeaders},
+	{"HttpHeaders.Count.get", httpheaders_Count},
+	{"HttpHeaders.GetHeaderByIndex", httpheaders_GetHeaderByIndex},
+
+	// HttpCompletion
+	{"HttpCompletion.Status.get", httpcompletion_GetStatus},
+	{"HttpCompletion.GetBody", httpcompletion_GetBody},
+	{"HttpCompletion.BodyLength.get", httpcompletion_GetBodyLength},
+	{"HttpCompletion.ResponseHeaders.get", httpcompletion_GetResponseHeaders},
+	{"HttpCompletion.GetProtocol", httpcompletion_GetProtocol},
+	{"HttpCompletion.IsSuccess.get", httpcompletion_IsSuccess},
 
 	// User
 	{"DiscordUser.DiscordUser", user_CreateFromId},
@@ -9128,7 +9500,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordUser.GetUrl", user_GetUrl},
 	{"DiscordUser.GetFormattedUsername", user_GetFormattedUsername},
 	{"DiscordUser.Flags.get", user_GetFlags},
-  {"DiscordUser.HasFlag", user_HasFlag},
+	{"DiscordUser.HasFlag", user_HasFlag},
 	{"DiscordUser.IsSystem.get", user_IsSystem},
 	{"DiscordUser.IsMfaEnabled.get", user_IsMfaEnabled},
 	{"DiscordUser.IsVerified.get", user_IsVerified},
@@ -9327,10 +9699,10 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordMessage.Author.get", message_GetAuthor},
 	{"DiscordMessage.GetAuthorNickname", message_GetAuthorNickname},
 	{"DiscordMessage.Type.get", message_GetType},
-  {"DiscordMessage.Type.set", message_SetType},
+	{"DiscordMessage.Type.set", message_SetType},
 	{"DiscordMessage.IsPinned.get", message_IsPinned},
 	{"DiscordMessage.IsTTS.get", message_IsTTS},
-  {"DiscordMessage.IsTTS.set", message_SetTTS},
+	{"DiscordMessage.IsTTS.set", message_SetTTS},
 	{"DiscordMessage.IsMentionEveryone.get", message_IsMentionEveryone},
 	{"DiscordMessage.IsBot.get", message_IsBot},
 	{"DiscordMessage.Edit", message_Edit},
@@ -9348,7 +9720,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	
 	// New message properties
 	{"DiscordMessage.Flags.get", message_GetFlags},
-  {"DiscordMessage.Flags.set", message_SetFlags},
+	{"DiscordMessage.Flags.set", message_SetFlags},
 	{"DiscordMessage.IsCrossposted.get", message_IsCrossposted},
 	{"DiscordMessage.IsCrosspost.get", message_IsCrosspost},
 	{"DiscordMessage.EmbedsSuppressed.get", message_EmbedsSuppressed},
@@ -9538,7 +9910,7 @@ const sp_nativeinfo_t discord_natives[] = {
 	{"DiscordEmbed.GetProviderUrl", embed_GetProviderUrl},
 	{"DiscordEmbed.GetType", embed_GetType},
 	{"DiscordEmbed.Timestamp.get", embed_GetTimestamp},
-  {"DiscordEmbed.Timestamp.set", embed_SetTimestamp},
+	{"DiscordEmbed.Timestamp.set", embed_SetTimestamp},
 	{"DiscordEmbed.FieldCount.get", embed_GetFieldCount},
 	{"DiscordEmbed.GetFieldName", embed_GetFieldName},
 	{"DiscordEmbed.GetFieldValue", embed_GetFieldValue},
