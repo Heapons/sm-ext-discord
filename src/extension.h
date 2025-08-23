@@ -5,6 +5,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <unordered_set>
 #include "queue.h"
 #include "dpp/dpp.h"
 #include "discord.h"

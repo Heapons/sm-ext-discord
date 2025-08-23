@@ -2,9 +2,31 @@
 #define _INCLUDE_DISCORD_H_
 
 #include "extension.h"
-#include <algorithm>
 
-// Forward declarations
+/**
+ * @brief Get the pointer to the object from the handle
+ * 
+ * @tparam T The type of the object
+ * @param pContext The plugin context
+ * @param handle The handle to the object
+ * @param handleType The type of the handle
+ * @param typeName The name of the type
+ * @return The pointer to the object
+ */
+template<typename T>
+static T* GetHandlePointer(IPluginContext* pContext, Handle_t handle, HandleType_t handleType, const char* typeName) {
+	HandleError err;
+	HandleSecurity sec(pContext->GetIdentity(), myself->GetIdentity());
+
+	T* object;
+	if ((err = handlesys->ReadHandle(handle, handleType, &sec, (void**)&object)) != HandleError_None) {
+		pContext->ReportError("Invalid %s handle %x (error %d)", typeName, handle, err);
+		return nullptr;
+	}
+
+	return object;
+}
+
 class DiscordClient;
 
 class DiscordEmbed
@@ -112,13 +134,13 @@ public:
 	}
 	DiscordForumTag(const dpp::forum_tag& tag) : m_tag(tag) {}
 
-	std::string GetId() const { return std::to_string(m_tag.id); }
+	std::string GetId() const { return m_tag.id.str(); }
 	std::string GetName() const { return m_tag.name; }
 	void SetName(const char* name) { m_tag.set_name(name); }
 	
 	std::string GetEmoji() const {
 		if (std::holds_alternative<dpp::snowflake>(m_tag.emoji)) {
-			return std::to_string(std::get<dpp::snowflake>(m_tag.emoji));
+			return std::get<dpp::snowflake>(m_tag.emoji).str();
 		} else if (std::holds_alternative<std::string>(m_tag.emoji)) {
 			return std::get<std::string>(m_tag.emoji);
 		}
@@ -157,10 +179,12 @@ private:
 	DiscordClient* m_client;
 
 public:
+	DiscordUser(const dpp::user& user) : m_user(user), m_has_member(false) {}
 	DiscordUser(const dpp::user& user, DiscordClient* client) : m_user(user), m_has_member(false), m_client(client) {}
+	DiscordUser(const dpp::user& user, const dpp::guild_member& member) : m_user(user), m_member(member), m_has_member(true) {}
 	DiscordUser(const dpp::user& user, const dpp::guild_member& member, DiscordClient* client) : m_user(user), m_member(member), m_has_member(true), m_client(client) {}
 	
-	std::string GetId() const { return std::to_string(m_user.id); }
+	std::string GetId() const { return m_user.id.str(); }
 	const char* GetUserName() const { return m_user.username.c_str(); }
 	const uint16_t GetDiscriminator() const { return m_user.discriminator; }
 	const char* GetGlobalName() const { return m_user.global_name.c_str(); }
@@ -201,7 +225,7 @@ public:
 	// Guild member specific methods
 	bool HasGuildMember() const { return m_has_member; }
 	std::string GetNickName() const { return m_has_member ? m_member.get_nickname() : ""; }
-	std::string GetJoinedAt() const { return m_has_member ? std::to_string(m_member.joined_at) : "0"; }
+	time_t GetJoinedAt() const { return m_has_member ? m_member.joined_at : 0; }
 	bool IsPending() const { return m_has_member ? m_member.is_pending() : false; }
 	
 	// Permission methods
@@ -275,9 +299,9 @@ public:
 	}
 	const char* GetContent() const { return m_message.content.c_str(); }
 	const size_t GetContentLength() const { return m_message.content.length(); }
-	std::string GetMessageId() const { return std::to_string(m_message.id); }
-	std::string GetChannelId() const { return std::to_string(m_message.channel_id); }
-	std::string GetGuildId() const { return std::to_string(m_message.guild_id); }
+	std::string GetMessageId() const { return m_message.id.str(); }
+	std::string GetChannelId() const { return m_message.channel_id.str(); }
+	std::string GetGuildId() const { return m_message.guild_id.str(); }
 	std::string GetAuthorNickname() const { return m_message.member.get_nickname(); }
 	dpp::message_type GetType() const { return m_message.type; }
 	bool IsPinned() const { return m_message.pinned; }
@@ -302,9 +326,9 @@ public:
 	bool IsUsingComponentsV2() const { return (m_message.flags & (1 << 15)) != 0; }
 	
 	// Additional properties
-	std::string GetWebhookId() const { return std::to_string(m_message.webhook_id); }
-	time_t GetTimestamp() const { return static_cast<time_t>(m_message.sent); }
-	time_t GetEditedTimestamp() const { return static_cast<time_t>(m_message.edited); }
+	std::string GetWebhookId() const { return m_message.webhook_id.str(); }
+	time_t GetTimestamp() const { return m_message.sent; }
+	time_t GetEditedTimestamp() const { return m_message.edited; }
 	const char* GetNonce() const { return m_message.nonce.c_str(); }
 	bool IsDM() const { return m_message.guild_id == 0; }
 	bool HasRemixAttachment() const {
@@ -315,11 +339,11 @@ public:
 	}
 	std::string GetURL() const {
 		if (m_message.guild_id != 0) {
-			return "https://discord.com/channels/" + std::to_string(m_message.guild_id) + "/" + 
-						 std::to_string(m_message.channel_id) + "/" + std::to_string(m_message.id);
+			return "https://discord.com/channels/" + m_message.guild_id.str() + "/" + 
+						 m_message.channel_id.str() + "/" + m_message.id.str();
 		} else {
-			return "https://discord.com/channels/@me/" + std::to_string(m_message.channel_id) + "/" + 
-						 std::to_string(m_message.id);
+			return "https://discord.com/channels/@me/" + m_message.channel_id.str() + "/" + 
+						 m_message.id.str();
 		}
 	}
 	
@@ -347,11 +371,11 @@ public:
 	}
 	std::string GetMentionedUserId(size_t index) const {
 		if (index >= m_message.mentions.size()) return "";
-		return std::to_string(m_message.mentions[index].first.id);
+		return m_message.mentions[index].first.id.str();
 	}
 	std::string GetMentionedRoleId(size_t index) const {
 		if (index >= m_message.mention_roles.size()) return "";
-		return std::to_string(m_message.mention_roles[index]);
+		return m_message.mention_roles[index].str();
 	}
 	
 	// Message actions
@@ -394,13 +418,14 @@ private:
 	DiscordClient* m_client;
 
 public:
+	DiscordChannel(const dpp::channel& chnl) : m_channel(chnl) {}
 	DiscordChannel(const dpp::channel& chnl, DiscordClient* client) : m_channel(chnl), m_client(client) {}
 
 	// Basic information
 	const char* GetName() const { return m_channel.name.c_str(); }
-	std::string GetId() const { return std::to_string(m_channel.id); }
-	std::string GetGuildId() const { return std::to_string(m_channel.guild_id); }
-	std::string GetParentId() const { return std::to_string(m_channel.parent_id); }
+	std::string GetId() const { return m_channel.id.str(); }
+	std::string GetGuildId() const { return m_channel.guild_id.str(); }
+	std::string GetParentId() const { return m_channel.parent_id.str(); }
 	const char* GetTopic() const { return m_channel.topic.c_str(); }
 	
 	// Channel type and properties
@@ -429,9 +454,9 @@ public:
 	
 	// Additional channel properties
 	uint16_t GetFlags() const { return m_channel.flags; }
-	std::string GetOwnerId() const { return std::to_string(m_channel.owner_id); }
-	std::string GetLastMessageId() const { return std::to_string(m_channel.last_message_id); }
-	time_t GetLastPinTimestamp() const { return static_cast<time_t>(m_channel.last_pin_timestamp); }
+	std::string GetOwnerId() const { return m_channel.owner_id.str(); }
+	std::string GetLastMessageId() const { return m_channel.last_message_id.str(); }
+	time_t GetLastPinTimestamp() const { return m_channel.last_pin_timestamp; }
 	uint16_t GetDefaultThreadRateLimitPerUser() const { return m_channel.default_thread_rate_limit_per_user; }
 	uint8_t GetDefaultAutoArchiveDuration() const { return static_cast<uint8_t>(m_channel.default_auto_archive_duration); }
 	uint8_t GetDefaultSortOrder() const { return static_cast<uint8_t>(m_channel.default_sort_order); }
@@ -458,7 +483,7 @@ public:
 	size_t GetPermissionOverwriteCount() const { return m_channel.permission_overwrites.size(); }
 	std::string GetPermissionOverwriteTargetId(size_t index) const {
 		if (index >= m_channel.permission_overwrites.size()) return "";
-		return std::to_string(m_channel.permission_overwrites[index].id);
+		return m_channel.permission_overwrites[index].id.str();
 	}
 	uint8_t GetPermissionOverwriteType(size_t index) const {
 		if (index >= m_channel.permission_overwrites.size()) return 0;
@@ -473,7 +498,7 @@ public:
 	}
 	std::string GetAvailableTagId(size_t index) const {
 		if (index >= m_channel.available_tags.size()) return "";
-		return std::to_string(m_channel.available_tags[index].id);
+		return m_channel.available_tags[index].id.str();
 	}
 	
 	// New Forum tag methods
@@ -481,7 +506,7 @@ public:
 		if (index >= m_channel.available_tags.size()) return "";
 		const auto& tag = m_channel.available_tags[index];
 		if (std::holds_alternative<dpp::snowflake>(tag.emoji)) {
-			return std::to_string(std::get<dpp::snowflake>(tag.emoji));
+			return std::get<dpp::snowflake>(tag.emoji).str();
 		} else if (std::holds_alternative<std::string>(tag.emoji)) {
 			return std::get<std::string>(tag.emoji);
 		}
@@ -515,6 +540,8 @@ public:
 	
 	// Channel actions
 	bool CreateInvite(int max_age = 86400, int max_uses = 0, bool temporary = false, bool unique = false);
+	bool GetInvites();
+	bool DeleteInvite(const char* invite_code);
 	bool SendMessage(const char* content);
 	bool SendMessageEmbed(const char* content, const class DiscordEmbed* embed);
 	bool SendDiscordMessage(const class DiscordMessage* message);
@@ -565,7 +592,7 @@ public:
 	}
 
 	// Basic properties
-	std::string GetId() const { return std::to_string(m_webhook.id); }
+	std::string GetId() const { return m_webhook.id.str(); }
 	
 	Handle_t GetUserHandle() const;
 	
@@ -578,13 +605,13 @@ public:
 	void SetAvatarData(const char* value) { m_webhook.avatar = dpp::utility::iconhash(value); }
 	
 	// Additional webhook properties (read-only)
-	uint8_t GetType() const { return static_cast<uint8_t>(m_webhook.type); }
-	std::string GetGuildId() const { return std::to_string(m_webhook.guild_id); }
-	std::string GetChannelId() const { return std::to_string(m_webhook.channel_id); }
+	uint8_t GetType() const { return m_webhook.type; }
+	std::string GetGuildId() const { return m_webhook.guild_id.str(); }
+	std::string GetChannelId() const { return m_webhook.channel_id.str(); }
 	const char* GetToken() const { return m_webhook.token.c_str(); }
-	std::string GetApplicationId() const { return std::to_string(m_webhook.application_id); }
-	std::string GetSourceGuildId() const { return std::to_string(m_webhook.source_guild.id); }
-	std::string GetSourceChannelId() const { return std::to_string(m_webhook.source_channel.id); }
+	std::string GetApplicationId() const { return m_webhook.application_id.str(); }
+	std::string GetSourceGuildId() const { return m_webhook.source_guild.id.str(); }
+	std::string GetSourceChannelId() const { return m_webhook.source_channel.id.str(); }
 	const char* GetUrl() const { return m_webhook.url.c_str(); }
 	std::string GetImageData() const { return m_webhook.image_data; }
 	
@@ -607,8 +634,8 @@ class DiscordClient
 {
 private:
 	std::unique_ptr<dpp::cluster> m_cluster;
-	Handle_t m_discord_handle;
 	std::unique_ptr<std::thread> m_thread;
+	Handle_t m_discord_handle;
 
 	std::string m_botId;
 	std::string m_botName;
@@ -733,7 +760,7 @@ public:
 
 	void UpdateBotInfo() {
 		if (m_cluster) {
-			m_botId = std::to_string(m_cluster->me.id);
+			m_botId = m_cluster->me.id.str();
 			m_botName = m_cluster->me.username;
 			m_botDiscriminator = m_cluster->me.discriminator;
 			m_botAvatarUrl = m_cluster->me.get_avatar_url();
@@ -765,8 +792,8 @@ public:
 	}
 
 	const char* GetCommandName() const { return m_commandName.c_str(); }
-	std::string GetGuildId() const { return std::to_string(m_interaction.command.guild_id); }
-	std::string GetChannelId() const { return std::to_string(m_interaction.command.channel_id); }
+	std::string GetGuildId() const { return m_interaction.command.guild_id.str(); }
+	std::string GetChannelId() const { return m_interaction.command.channel_id.str(); }
 	
 	Handle_t GetUserHandle() const;
 	
@@ -776,7 +803,7 @@ public:
 		}
 		return new DiscordUser(m_interaction.command.usr, m_client); 
 	}
-	std::string GetUserId() const { return std::to_string(m_interaction.command.usr.id); }
+	std::string GetUserId() const { return m_interaction.command.usr.id.str(); }
 	const char* GetUserName() const { return m_interaction.command.usr.username.c_str(); }
 	std::string GetUserNickname() const { return m_interaction.command.member.get_nickname(); }
 
@@ -870,8 +897,8 @@ public:
 	}
 
 	const char* GetCommandName() const { return m_commandName.c_str(); }
-	std::string GetGuildId() const { return std::to_string(m_command.guild_id); }
-	std::string GetChannelId() const { return std::to_string(m_command.channel_id); }
+	std::string GetGuildId() const { return m_command.guild_id.str(); }
+	std::string GetChannelId() const { return m_command.channel_id.str(); }
 	
 	Handle_t GetUserHandle() const;
 	
@@ -919,14 +946,15 @@ private:
 	DiscordClient* m_client;
 
 public:
+	DiscordGuild(const dpp::guild& guild) : m_guild(guild) {}
 	DiscordGuild(const dpp::guild& guild, DiscordClient* client) : m_guild(guild), m_client(client) {}
 
 	// Basic guild information
-	std::string GetId() const { return std::to_string(m_guild.id); }
+	std::string GetId() const { return m_guild.id.str(); }
 	const char* GetName() const { return m_guild.name.c_str(); }
 	const char* GetDescription() const { return m_guild.description.c_str(); }
-	std::string GetOwnerId() const { return std::to_string(m_guild.owner_id); }
-	std::string GetApplicationId() const { return std::to_string(m_guild.application_id); }
+	std::string GetOwnerId() const { return m_guild.owner_id.str(); }
+	std::string GetApplicationId() const { return m_guild.application_id.str(); }
 	
 	// Guild URLs and icons
 	std::string GetIconUrl(uint16_t size = 0, bool prefer_animated = true) const { 
@@ -991,12 +1019,12 @@ public:
 	uint8_t GetDefaultMessageNotifications() const { return static_cast<uint8_t>(m_guild.default_message_notifications); }
 	
 	// Channel IDs
-	std::string GetAfkChannelId() const { return std::to_string(m_guild.afk_channel_id); }
-	std::string GetSystemChannelId() const { return std::to_string(m_guild.system_channel_id); }
-	std::string GetRulesChannelId() const { return std::to_string(m_guild.rules_channel_id); }
-	std::string GetPublicUpdatesChannelId() const { return std::to_string(m_guild.public_updates_channel_id); }
-	std::string GetWidgetChannelId() const { return std::to_string(m_guild.widget_channel_id); }
-	std::string GetSafetyAlertsChannelId() const { return std::to_string(m_guild.safety_alerts_channel_id); }
+	std::string GetAfkChannelId() const { return m_guild.afk_channel_id.str(); }
+	std::string GetSystemChannelId() const { return m_guild.system_channel_id.str(); }
+	std::string GetRulesChannelId() const { return m_guild.rules_channel_id.str(); }
+	std::string GetPublicUpdatesChannelId() const { return m_guild.public_updates_channel_id.str(); }
+	std::string GetWidgetChannelId() const { return m_guild.widget_channel_id.str(); }
+	std::string GetSafetyAlertsChannelId() const { return m_guild.safety_alerts_channel_id.str(); }
 	
 	// Collections
 	uint64_t GetRoleCount() const { return dpp::get_role_count(); }
@@ -1008,19 +1036,19 @@ public:
 	// Collection accessors
 	std::string GetRoleId(size_t index) const {
 		if (index >= m_guild.roles.size()) return "";
-		return std::to_string(m_guild.roles[index]);
+		return m_guild.roles[index].str();
 	}
 	std::string GetChannelId(size_t index) const {
 		if (index >= m_guild.channels.size()) return "";
-		return std::to_string(m_guild.channels[index]);
+		return m_guild.channels[index].str();
 	}
 	std::string GetThreadId(size_t index) const {
 		if (index >= m_guild.threads.size()) return "";
-		return std::to_string(m_guild.threads[index]);
+		return m_guild.threads[index].str();
 	}
 	std::string GetEmojiId(size_t index) const {
 		if (index >= m_guild.emojis.size()) return "";
-		return std::to_string(m_guild.emojis[index]);
+		return m_guild.emojis[index].str();
 	}
 	
 	// Additional properties
@@ -1035,7 +1063,7 @@ public:
 	size_t GetWelcomeChannelCount() const { return m_guild.welcome_screen.welcome_channels.size(); }
 	std::string GetWelcomeChannelId(size_t index) const {
 		if (index >= m_guild.welcome_screen.welcome_channels.size()) return "";
-		return std::to_string(m_guild.welcome_screen.welcome_channels[index].channel_id);
+		return m_guild.welcome_screen.welcome_channels[index].channel_id.str();
 	}
 	const char* GetWelcomeChannelDescription(size_t index) const {
 		if (index >= m_guild.welcome_screen.welcome_channels.size()) return "";

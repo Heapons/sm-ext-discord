@@ -39,7 +39,6 @@ public:
 	void Push(T item) {
 		std::unique_lock<std::mutex> lock(mutex);
 		queue.push(std::move(item));
-		lock.unlock();
 		cond.notify_one();
 	}
 
