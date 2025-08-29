@@ -1,25 +1,11 @@
 #include "extension.h"
 
-#define MAX_PROCESS 20
+#define MAX_PROCESS 10
 
 DiscordExtension g_DiscordExt;
 SMEXT_LINK(&g_DiscordExt);
 
-HandleType_t
-	g_DiscordHandle,
-	g_DiscordUserHandle,
-	g_DiscordMessageHandle,
-	g_DiscordChannelHandle,
-	g_DiscordWebhookHandle,
-	g_DiscordEmbedHandle,
-	g_DiscordInteractionHandle,
-	g_DiscordAutocompleteInteractionHandle,
-	g_DiscordSlashCommandHandle,
-	g_DiscordForumTagHandle,
-	g_DiscordGuildHandle,
-	g_HttpHeadersHandle,
-	g_HttpCompletionHandle;
-
+HandleType_t g_DiscordHandle, g_DiscordUserHandle, g_DiscordMessageHandle, g_DiscordChannelHandle, g_DiscordWebhookHandle, g_DiscordEmbedHandle, g_DiscordInteractionHandle, g_DiscordAutocompleteInteractionHandle;
 DiscordHandler g_DiscordHandler;
 DiscordUserHandler g_DiscordUserHandler;
 DiscordMessageHandler g_DiscordMessageHandler;
@@ -28,12 +14,12 @@ DiscordWebhookHandler g_DiscordWebhookHandler;
 DiscordEmbedHandler g_DiscordEmbedHandler;
 DiscordInteractionHandler g_DiscordInteractionHandler;
 DiscordAutocompleteInteractionHandler g_DiscordAutocompleteInteractionHandler;
-DiscordSlashCommandHandler g_DiscordSlashCommandHandler;
-DiscordForumTagHandler g_DiscordForumTagHandler;
-DiscordGuildHandler g_DiscordGuildHandler;
-HttpHeadersHandler g_HttpHeadersHandler;
-HttpCompletionHandler g_HttpCompletionHandler;
 
+IForward* g_pForwardReady = nullptr;
+IForward* g_pForwardMessage = nullptr;
+IForward* g_pForwardError = nullptr;
+IForward* g_pForwardSlashCommand = nullptr;
+IForward* g_pForwardAutocomplete = nullptr;
 
 ThreadSafeQueue<std::function<void()>> g_TaskQueue;
 
@@ -63,11 +49,12 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	g_DiscordEmbedHandle = handlesys->CreateType("DiscordEmbed", &g_DiscordEmbedHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordInteractionHandle = handlesys->CreateType("DiscordInteraction", &g_DiscordInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
 	g_DiscordAutocompleteInteractionHandle = handlesys->CreateType("DiscordAutocompleteInteraction", &g_DiscordAutocompleteInteractionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordSlashCommandHandle = handlesys->CreateType("DiscordSlashCommand", &g_DiscordSlashCommandHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordForumTagHandle = handlesys->CreateType("DiscordForumTag", &g_DiscordForumTagHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_DiscordGuildHandle = handlesys->CreateType("DiscordGuild", &g_DiscordGuildHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_HttpHeadersHandle = handlesys->CreateType("HttpHeaders", &g_HttpHeadersHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
-	g_HttpCompletionHandle = handlesys->CreateType("HttpCompletion", &g_HttpCompletionHandler, 0, nullptr, &haDefaults, myself->GetIdentity(), nullptr);
+
+	g_pForwardReady = forwards->CreateForward("Discord_OnReady", ET_Ignore, 1, nullptr, Param_Cell);
+	g_pForwardMessage = forwards->CreateForward("Discord_OnMessage", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
+	g_pForwardError = forwards->CreateForward("Discord_OnError", ET_Ignore, 2, nullptr, Param_Cell, Param_String);
+	g_pForwardSlashCommand = forwards->CreateForward("Discord_OnSlashCommand", ET_Ignore, 2, nullptr, Param_Cell, Param_Cell);
+	g_pForwardAutocomplete = forwards->CreateForward("Discord_OnAutocomplete", ET_Ignore, 5, nullptr, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 
 	smutils->AddGameFrameHook(&OnGameFrame);
 
@@ -76,6 +63,12 @@ bool DiscordExtension::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 void DiscordExtension::SDK_OnUnload()
 {
+	forwards->ReleaseForward(g_pForwardReady);
+	forwards->ReleaseForward(g_pForwardMessage);
+	forwards->ReleaseForward(g_pForwardError);
+	forwards->ReleaseForward(g_pForwardSlashCommand);
+	forwards->ReleaseForward(g_pForwardAutocomplete);
+
 	handlesys->RemoveType(g_DiscordHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordUserHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordMessageHandle, myself->GetIdentity());
@@ -84,11 +77,6 @@ void DiscordExtension::SDK_OnUnload()
 	handlesys->RemoveType(g_DiscordEmbedHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordInteractionHandle, myself->GetIdentity());
 	handlesys->RemoveType(g_DiscordAutocompleteInteractionHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordSlashCommandHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordForumTagHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_DiscordGuildHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_HttpHeadersHandle, myself->GetIdentity());
-	handlesys->RemoveType(g_HttpCompletionHandle, myself->GetIdentity());
 
 	smutils->RemoveGameFrameHook(&OnGameFrame);
 }
@@ -140,34 +128,4 @@ void DiscordAutocompleteInteractionHandler::OnHandleDestroy(HandleType_t type, v
 {
 	DiscordAutocompleteInteraction* interaction = (DiscordAutocompleteInteraction*)object;
 	delete interaction;
-}
-
-void DiscordSlashCommandHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordSlashCommand* command = (DiscordSlashCommand*)object;
-	delete command;
-}
-
-void DiscordForumTagHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordForumTag* tag = (DiscordForumTag*)object;
-	delete tag;
-}
-
-void DiscordGuildHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	DiscordGuild* guild = (DiscordGuild*)object;
-	delete guild;
-}
-
-void HttpHeadersHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	HttpHeaders* headers = (HttpHeaders*)object;
-	delete headers;
-}
-
-void HttpCompletionHandler::OnHandleDestroy(HandleType_t type, void* object)
-{
-	HttpCompletion* completion = (HttpCompletion*)object;
-	delete completion;
 }

@@ -20,7 +20,6 @@
  *
  ************************************************************************************/
 #pragma once
-#include <dpp/export.h>
 #include <string>
 #include <cstdint>
 
@@ -40,7 +39,7 @@ struct wrapped_ssl_ctx;
  * @param public_key Public key PEM pathname for server contexts
  * @return wrapped SSL context
  */
-DPP_EXPORT wrapped_ssl_ctx* generate_ssl_context(uint16_t port = 0, const std::string &private_key = "", const std::string &public_key = "");
+wrapped_ssl_ctx* generate_ssl_context(uint16_t port = 0, const std::string &private_key = "", const std::string &public_key = "");
 
 /**
  * @brief Release an SSL context
@@ -48,6 +47,6 @@ DPP_EXPORT wrapped_ssl_ctx* generate_ssl_context(uint16_t port = 0, const std::s
  * As OpenSSL is a C library it is impossible for us to track this on its behalf. Be careful!
  * @param port port number to release
  */
-DPP_EXPORT void release_ssl_context(uint16_t port = 0);
+void release_ssl_context(uint16_t port = 0);
 
 };

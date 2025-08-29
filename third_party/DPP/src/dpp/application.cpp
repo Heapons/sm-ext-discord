@@ -116,24 +116,16 @@ application& application::fill_from_json_impl(nlohmann::json* j) {
 
 	if (j->contains("redirect_uris")) {
 		for (const auto& uri : (*j)["redirect_uris"]) {
-			this->redirect_uris.push_back(uri.get<std::string>());
+			this->redirect_uris.push_back(to_string(uri));
 		}
 	}
 
 	set_string_not_null(j, "interactions_endpoint_url", interactions_endpoint_url);
 	set_string_not_null(j, "role_connections_verification_url", role_connections_verification_url);
 
-	set_string_not_null(j, "event_webhooks_url", event_webhooks_url);
-	if (j->contains("event_webhooks_types")) {
-		for (const auto& event_webhook_type : (*j)["event_webhooks_types"]) {
-			this->event_webhooks_types.push_back(event_webhook_type.get<std::string>());
-		}
-	}
-	this->event_webhooks_status = static_cast<application_event_webhook_status>(int8_not_null(j, "event_webhooks_status"));
-
 	if (j->contains("tags")) {
 		for (const auto& tag : (*j)["tags"]) {
-			this->tags.push_back(tag.get<std::string>());
+			this->tags.push_back(to_string(tag));
 		}
 	}
 
@@ -141,7 +133,7 @@ application& application::fill_from_json_impl(nlohmann::json* j) {
 		json& p = (*j)["install_params"];
 		set_snowflake_not_null(&p, "permissions", this->install_params.permissions);
 		for (const auto& scope : p["scopes"]) {
-			this->install_params.scopes.push_back(scope.get<std::string>());
+			this->install_params.scopes.push_back(to_string(scope));
 		}
 	}
 
@@ -170,7 +162,7 @@ application& application::fill_from_json_impl(nlohmann::json* j) {
 
 	if (j->contains("interactions_event_types")) {
 		for (const auto& event_type : (*j)["interactions_event_types"]) {
-			this->interactions_event_types.push_back(event_type.get<std::string>());
+			this->interactions_event_types.push_back(to_string(event_type));
 		}
 	}
 

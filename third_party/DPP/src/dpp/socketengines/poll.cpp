@@ -19,7 +19,6 @@
  *
  ************************************************************************************/
 
-#include <dpp/cluster.h>
 #include <dpp/socketengine.h>
 #include <dpp/exception.h>
 #include <vector>

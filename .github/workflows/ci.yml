@@ -6,15 +6,12 @@ on:
     branches:
       - "main"
     paths:
+      - "scripting/**"
       - "src/**"
-      - "third_party/**"
   pull_request:
     paths:
+      - "scripting/**"
       - "src/**"
-      - "third_party/**"
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -45,7 +42,7 @@ jobs:
             os_short: linux
 
           - os: ubuntu-22.04
-            os_short: linux-ubuntu-22.04
+            os_short: linux-debian12
             
     steps:
       - name: Prepare env
@@ -85,12 +82,26 @@ jobs:
         with:
           path: extension
 
+      - name: Install v143 Toolset
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
+          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
+          $WorkLoads = '--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
+          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"", $WorkLoads, '--quiet', '--norestart', '--nocache')
+          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+          if ($process.ExitCode -eq 0) {
+              Write-Host "components have been successfully added"
+          } else {
+              Write-Host "components were not installed"
+          }
+
       - uses: microsoft/setup-msbuild@v2
         if: runner.os == 'Windows'
         with:
             msbuild-architecture: x64
             vs-version: '15'
-            
       - name: Compiling ${{ github.event.repository.name }} files
         working-directory: extension
         run: |
@@ -104,54 +115,3 @@ jobs:
         with:
           name: sm-ext-discord-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
           path: extension/build/package
-
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          path: extension
-          sparse-checkout: |
-            src/smsdk_config.h
-
-      - name: Get version from smsdk_config.h
-        id: get_version
-        run: |
-          VERSION=$(grep '#define SMEXT_CONF_VERSION' extension/src/smsdk_config.h | awk -F '"' '{print $2}')
-          if [ -z "$VERSION" ]; then
-            echo "Error: Could not find version in smsdk_config.h"
-            exit 1
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
-      - name: Generate Release Notes
-        run: echo "${{ github.event.head_commit.message }}" >> release_notes.md
-          
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          
-      - name: Create Release Archives
-        run: |
-          cd artifacts
-          for dir in sm-ext-discord-*; do
-            7z a "../${dir}.zip" "./${dir}/"*
-          done
-          
-      - name: Update Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          name: Release ${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
-          body_path: release_notes.md
-          files: |
-            sm-ext-discord-*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

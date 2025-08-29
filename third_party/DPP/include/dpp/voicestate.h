@@ -89,7 +89,7 @@ public:
 	/**
 	 * @brief Owning shard.
 	 */
-	int32_t shard_id{0};
+	class discord_client* shard;
 
 	/**
 	 * @brief Optional: The guild id this voice state is for.

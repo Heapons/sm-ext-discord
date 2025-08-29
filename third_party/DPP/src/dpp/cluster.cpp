@@ -229,11 +229,7 @@ void cluster::start(start_type return_after) {
 				if (now >= shard_reconnect_time) {
 					/* This shard needs to be reconnected */
 					reconnections.erase(reconnect);
-					discord_client* old = nullptr;
-					{
-						std::shared_lock lk(shards_mutex);
-						old = shards[shard_id];
-					}
+					discord_client* old = shards[shard_id];
 					/* These values must be copied to the new connection
 					 * to attempt to resume it
 					 */
@@ -242,14 +238,12 @@ void cluster::start(start_type return_after) {
 					log(ll_info, "Reconnecting shard " + std::to_string(shard_id));
 					/* Make a new resumed connection based off the old one */
 					try {
-						std::unique_lock lk(shards_mutex);
 						if (shards[shard_id] != nullptr) {
 							log(ll_trace, "Attempting resume...");
 							shards[shard_id] = nullptr;
 							shards[shard_id] = new discord_client(*old, seq_no, session_id);
 						} else {
 							log(ll_trace, "Attempting full reconnection...");
-							shards[shard_id] = nullptr;
 							shards[shard_id] = new discord_client(this, shard_id, numshards, token, intents, compressed, ws_mode);
 						}
 						/* Delete the old one */
@@ -261,7 +255,6 @@ void cluster::start(start_type return_after) {
 						shards[shard_id]->run();
 					}
 					catch (const std::exception& e) {
-						std::unique_lock lk(shards_mutex);
 						log(ll_info, "Exception when reconnecting shard " + std::to_string(shard_id) + ": " + std::string(e.what()));
 						delete shards[shard_id];
 						delete old;
@@ -347,7 +340,6 @@ void cluster::start(start_type return_after) {
 				if (s % maxclusters == cluster_id) {
 					/* Each discord_client is inserted into the socket engine when we call run() */
 					try {
-						std::unique_lock lk(shards_mutex);
 						this->shards[s] = new discord_client(this, s, numshards, token, intents, compressed, ws_mode);
 						this->shards[s]->run();
 					}
@@ -453,17 +445,9 @@ void cluster::shutdown() {
 
 	{
 		std::lock_guard<std::mutex> l(timer_guard);
-		while (!this->next_timer.empty()) {
-			timer_t cur_timer = std::move(next_timer.top());
-			if (cur_timer.on_stop) {
-				cur_timer.on_stop(cur_timer.handle);
-			}
-			next_timer.pop();
-		}
 		next_timer = {};
 	}
 
-	std::unique_lock lk(shards_mutex);
 	/* Terminate shards */
 	for (const auto& sh : shards) {
 		delete sh.second;
@@ -590,7 +574,6 @@ void cluster::set_presence(const dpp::presence &p) {
 	}
 
 	json pres = p.to_json();
-	std::shared_lock lk(shards_mutex);
 	for (auto& s : shards) {
 		if (s.second->is_connected()) {
 			s.second->queue_message(s.second->jsonobj_to_string(pres));
@@ -619,17 +602,16 @@ std::string cluster::get_audit_reason() {
 	return r;
 }
 
-discord_client* cluster::get_shard(uint32_t id) const {
-	std::shared_lock lk(shards_mutex);
+discord_client* cluster::get_shard(uint32_t id) {
 	auto i = shards.find(id);
 	if (i != shards.end()) {
 		return i->second;
+	} else {
+		return nullptr;
 	}
-	return nullptr;
 }
 
-shard_list cluster::get_shards() const {
-	std::shared_lock lk(shards_mutex);
+const shard_list& cluster::get_shards() {
 	return shards;
 }
 

@@ -28,7 +28,6 @@ for cxx in builder.targets:
       dpp[arch].binary,
     ]
   elif binary.compiler.target.platform == 'windows':
-    binary.compiler.cxxflags += ['/wd4251', '/wd4101']  # Disable C4251: class needs dll-interface warning and C4101: unreferenced local variable warning
     binary.compiler.postlink += [
       os.path.join(builder.sourcePath, 'third_party', 'DPP', 'lib', 'dpp_{}.lib'.format(arch)),
 		]
